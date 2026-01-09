@@ -3,8 +3,7 @@
 **The ultimate incremental clicking adventure!**
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Platform](https://img.shields.io/badge/Platform-Web-lightgrey.svg)]()
-[![Built with](https://img.shields.io/badge/Built%20with-HTML%2CSS%2C%20JS-orange.svg)]()
+[![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey.svg)]()
 
 ---
 
