@@ -12,10 +12,10 @@ namespace QuadClicker
 {
     public partial class MainWindow : Window
     {
-        private CancellationTokenSource _cancellationTokenSource;
+        private CancellationTokenSource? _cancellationTokenSource;
         private bool _isClicking = false;
         private const int F10 = 0x79;
-        private HwndSource _source;
+        private HwndSource? _source;
 
         public MainWindow()
         {
@@ -25,9 +25,10 @@ namespace QuadClicker
         protected override void OnSourceInitialized(EventArgs e)
         {
             base.OnSourceInitialized(e);
-            _source = HwndSource.FromHwnd(new WindowInteropHelper(this).Handle);
-            _source.AddHook(HwndHook);
-            RegisterHotKey(new WindowInteropHelper(this).Handle, F10, (uint)ModifierKeys.None, F10);
+            var helper = new WindowInteropHelper(this);
+            _source = HwndSource.FromHwnd(helper.Handle);
+            _source?.AddHook(HwndHook);
+            RegisterHotKey(helper.Handle, F10, (uint)ModifierKeys.None, F10);
         }
 
         private IntPtr HwndHook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
@@ -85,7 +86,10 @@ namespace QuadClicker
             }
             finally
             {
-                StopClicking();
+                if (_isClicking)
+                {
+                    StopClicking();
+                }
             }
         }
 
@@ -175,9 +179,9 @@ namespace QuadClicker
             return ((uint)Environment.TickCount - lastInPut.dwTime);
         }
 
-        private LowLevelMouseProc _proc;
+        private LowLevelMouseProc? _proc;
         private IntPtr _hookID = IntPtr.Zero;
-        private Window _tempWindow;
+        private Window? _tempWindow;
 
         private async void PickLocationButton_Click(object sender, RoutedEventArgs e)
         {
@@ -222,7 +226,7 @@ namespace QuadClicker
                 {
                     XCoordinateTextBox.Text = p.X.ToString();
                     YCoordinateTextBox.Text = p.Y.ToString();
-                    _tempWindow.Close();
+                    _tempWindow?.Close();
                 });
             }
             return CallNextHookEx(_hookID, nCode, wParam, lParam);
@@ -231,16 +235,20 @@ namespace QuadClicker
         private IntPtr SetHook(LowLevelMouseProc proc)
         {
             using (var curProcess = System.Diagnostics.Process.GetCurrentProcess())
-            using (var curModule = curProcess.MainModule)
             {
-                return SetWindowsHookEx(14, proc, GetModuleHandle(curModule.ModuleName), 0);
+                var curModule = curProcess.MainModule;
+                if (curModule != null)
+                {
+                    return SetWindowsHookEx(14, proc, GetModuleHandle(curModule.ModuleName), 0);
+                }
+                return IntPtr.Zero;
             }
         }
 
         protected override void OnClosed(EventArgs e)
         {
             UnregisterHotKey(new WindowInteropHelper(this).Handle, F10);
-            _source.RemoveHook(HwndHook);
+            _source?.RemoveHook(HwndHook);
             base.OnClosed(e);
         }
 
@@ -310,7 +318,7 @@ namespace QuadClicker
             public uint dwTime;
         }
 
-        private delegate void LowLevelMouseProc(int nCode, IntPtr wParam, IntPtr lParam);
+        private delegate IntPtr LowLevelMouseProc(int nCode, IntPtr wParam, IntPtr lParam);
 
         [StructLayout(LayoutKind.Sequential)]
         public struct POINT
