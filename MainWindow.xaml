@@ -1,0 +1,57 @@
+<Window x:Class="QuadClicker.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:QuadClicker"
+        mc:Ignorable="d"
+        Title="QuadClicker" Height="450" Width="800">
+    <Grid Margin="10">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Label Grid.Row="0" Grid.Column="0" Content="Click Rate:" />
+        <TextBox Grid.Row="0" Grid.Column="1" x:Name="ClickRateTextBox" Text="100ms" />
+
+        <Label Grid.Row="1" Grid.Column="0" Content="Click Location:" />
+        <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal">
+            <RadioButton x:Name="CurrentPositionRadioButton" Content="Current Position" IsChecked="True" GroupName="ClickLocation" />
+            <RadioButton x:Name="SpecificPositionRadioButton" Content="Specific Position" GroupName="ClickLocation" Margin="10,0,0,0" />
+        </StackPanel>
+
+        <Label Grid.Row="2" Grid.Column="0" Content="Coordinates (X, Y):" />
+        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal">
+            <TextBox x:Name="XCoordinateTextBox" Width="50" IsEnabled="{Binding IsChecked, ElementName=SpecificPositionRadioButton}" />
+            <TextBox x:Name="YCoordinateTextBox" Width="50" Margin="5,0,0,0" IsEnabled="{Binding IsChecked, ElementName=SpecificPositionRadioButton}" />
+            <Button x:Name="PickLocationButton" Content="Pick Location" Margin="10,0,0,0" IsEnabled="{Binding IsChecked, ElementName=SpecificPositionRadioButton}" Click="PickLocationButton_Click" />
+        </StackPanel>
+
+        <Label Grid.Row="3" Grid.Column="0" Content="Idle Time (seconds):" />
+        <TextBox Grid.Row="3" Grid.Column="1" x:Name="IdleTimeTextBox" Text="0" />
+
+        <Label Grid.Row="4" Grid.Column="0" Content="Stop After (clicks):" />
+        <TextBox Grid.Row="4" Grid.Column="1" x:Name="StopAfterClicksTextBox" Text="0" />
+
+        <Label Grid.Row="5" Grid.Column="0" Content="Stop After (seconds):" />
+        <TextBox Grid.Row="5" Grid.Column="1" x:Name="StopAfterSecondsTextBox" Text="0" />
+        
+        <Label Grid.Row="6" Grid.Column="0" Content="Emergency Stop Hotkey:" />
+        <Label Grid.Row="6" Grid.Column="1" Content="F10" />
+
+        <Button Grid.Row="9" Grid.Column="0" Grid.ColumnSpan="2" x:Name="StartStopButton" Content="Start" Background="Green" Click="StartStopButton_Click" />
+    </Grid>
+</Window>
