@@ -1,6 +1,6 @@
 # QuadClicker
 
-**The ultimate incremental clicking adventure!**
+**A fast and configurable auto-clicker for Windows.**
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey.svg)]()
@@ -12,7 +12,7 @@
 - [Overview](#overview)
 - [Features](#features)
 - [Getting Started](#getting-started)
-- [How to Play](#how-to-play)
+- [Usage](#usage)
 - [Contributing](#contributing)
 - [License](#license)
 - [Author](#author)
@@ -22,22 +22,28 @@
 
 ## Overview
 
-`QuadClicker` is an addictive incremental/idle game where you click to generate resources, purchase upgrades, and build a massive automated empire. The goal is to generate as many "Quads" as possible and watch the numbers go up!
+`QuadClicker` is a utility for automating mouse clicks on Windows. It is a WPF application written in C# and targeting .NET 8. It provides a simple UI to configure click rate, location, and stopping conditions.
 
 Developed by Quadstronaut (Kyle Green).
 
 ## Features
 
-*   **Manual Clicking:** Start by clicking your way to your first upgrades.
-*   **Automatic Generators:** Purchase generators that automatically produce Quads for you, even when you're not clicking.
-*   **Powerful Upgrades:** Boost your clicking power and the efficiency of your generators.
-*   **Tiered Progression:** Unlock new and more powerful types of generators as you progress.
-*   **Prestige System:** Reset your progress to earn powerful permanent bonuses that accelerate future playthroughs.
-*   **Sleek Interface:** A clean and intuitive interface to manage your growing empire.
+*   **Configurable Click Rate:** Set the click interval in milliseconds, or as a frequency in clicks per second or per minute.
+*   **Flexible Click Location:**
+    *   Click at the current mouse cursor position.
+    *   Click at a fixed, specified X/Y coordinate.
+    *   Use the "Pick Location" tool to visually select a point on the screen.
+*   **Automatic Stop Conditions:**
+    *   Stop after a defined number of clicks.
+    *   Stop after a set duration in seconds.
+*   **Idle Detection:** Configure the auto-clicker to only run when the system has been idle for a specified time.
+*   **Emergency Hotkey:** Instantly stop the auto-clicker at any time by pressing the `F10` key.
 
 ## Getting Started
 
-This project is a simple web-based application. To get started, follow these steps:
+To build and run this project, you will need the [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) or a compatible version of Visual Studio.
+
+### Building from the Command Line
 
 1.  Clone the repository:
     ```sh
@@ -47,14 +53,42 @@ This project is a simple web-based application. To get started, follow these ste
     ```sh
     cd QuadClicker
     ```
-3.  Open the `index.html` file in your favorite web browser.
+3.  Build the project:
+    ```sh
+    dotnet build -c Release
+    ```
+4.  Run the application:
+    The executable will be located in `bin/Release/net8.0-windows/`.
+    ```sh
+    ./bin/Release/net8.0-windows/QuadClicker.exe
+    ```
 
-## How to Play
+### Building with Visual Studio
 
-1.  **Click:** Click the main button to generate Quads.
-2.  **Buy Generators:** Use your Quads to buy generators from the store on the right. These will automatically generate Quads for you.
-3.  **Buy Upgrades:** Purchase upgrades to increase the output of your clicks and generators.
-4.  **Prestige:** Once you reach a certain level, you'll have the option to "Prestige," which resets your game but grants you permanent bonuses for your next run.
+1.  Clone the repository.
+2.  Open the `QuadClicker.csproj` file in Visual Studio.
+3.  Set the build configuration to "Release".
+4.  Build the solution (F6).
+5.  Run the application (F5).
+
+## Usage
+
+1.  **Configure Click Rate:** Enter a value in the "Click Rate" textbox.
+    *   `100ms` (milliseconds)
+    *   `10 times per second`
+    *   `600 times per minute`
+2.  **Choose Click Location:**
+    *   Select "Current Position" to click wherever your mouse is.
+    *   Select "Specific Position", then either manually enter the X and Y coordinates or use the "Pick Location" button to select a point on the screen.
+3.  **Set Optional Conditions:**
+    *   **Idle Time:** Set a number of seconds the system must be idle before clicking begins.
+    *   **Stop After (clicks):** Set a maximum number of clicks.
+    *   **Stop After (seconds):** Set a maximum duration for the clicking session.
+4.  **Start/Stop:**
+    *   Click the "Start" button to begin auto-clicking.
+    *   Click the "Stop" button or press `F10` to end the session.
+
+---
 
 ## Contributing
 
@@ -76,19 +110,6 @@ Don't forget to give the project a star! Thanks again!
 Copyright © 2026 Quadstronaut (Kyle Green).
 
 This project is licensed under the terms of the GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007. See the `LICENSE` file in the project root for the full license text.
-
-> This program is free software: you can redistribute it and/or modify
-> it under the terms of the GNU General Public License as published by
-> the Free Software Foundation, either version 3 of the License, or
-> (at your option) any later version.
->
-> This program is distributed in the hope that it will be useful,
-> but WITHOUT ANY WARRANTY; without even the implied warranty of
-> MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> GNU General Public License for more details.
->
-> You should have received a copy of the GNU General Public License
-> along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ---
 
