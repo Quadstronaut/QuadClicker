@@ -1,8 +1,27 @@
 # QuadClicker
 
-The ultimate incremental clicking adventure!
+**The ultimate incremental clicking adventure!**
 
-## About The Project
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Platform](https://img.shields.io/badge/Platform-Web-lightgrey.svg)]()
+[![Built with](https://img.shields.io/badge/Built%20with-HTML%2CSS%2C%20JS-orange.svg)]()
+
+---
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Getting Started](#getting-started)
+- [How to Play](#how-to-play)
+- [Contributing](#contributing)
+- [License](#license)
+- [Author](#author)
+- [Acknowledgements](#acknowledgements)
+
+---
+
+## Overview
 
 `QuadClicker` is an addictive incremental/idle game where you click to generate resources, purchase upgrades, and build a massive automated empire. The goal is to generate as many "Quads" as possible and watch the numbers go up!
 
@@ -51,11 +70,13 @@ Don't forget to give the project a star! Thanks again!
 4.  Push to the Branch (`git push origin feature/AmazingFeature`)
 5.  Open a Pull Request
 
+---
+
 ## License
 
 Copyright © 2026 Quadstronaut (Kyle Green).
 
-This project is licensed under the terms of the GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007. See the [LICENSE](LICENSE.md) file for complete details.
+This project is licensed under the terms of the GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007. See the `LICENSE` file in the project root for the full license text.
 
 > This program is free software: you can redistribute it and/or modify
 > it under the terms of the GNU General Public License as published by
@@ -70,8 +91,21 @@ This project is licensed under the terms of the GNU GENERAL PUBLIC LICENSE Versi
 > You should have received a copy of the GNU General Public License
 > along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-## Contact
+---
 
-Kyle Green (@Quadstronaut)
+## Author
 
-Project Link: [https://github.com/Quadstronaut/QuadClicker](https://github.com/Quadstronaut/QuadClicker)
+**Kyle Green (Quadstronaut)**
+
+*   Project Link: [https://github.com/Quadstronaut/QuadClicker](https://github.com/Quadstronaut/QuadClicker)
+
+---
+
+## Acknowledgements
+
+*   Inspired by [Autoclick by Mahdi Bchatnia](https://mahdi.jp/apps/autoclick) (2011-2021 - GNU GPLv2)
+*   Thanks to all contributors who help improve this project.
+
+---
+
+**Happy Clicking! 🖱️**
