@@ -1,46 +1,53 @@
-# Prerequisites
-*.d
+# ── Build output ─────────────────────────────────────────────────────────────
+bin/
+obj/
+artifacts/
 
-# Compiled Object files
-*.slo
-*.lo
+# ── .NET ─────────────────────────────────────────────────────────────────────
+*.user
+*.suo
+.vs/
+*.ncrunch*
+TestResults/
+
+# ── Swift / Xcode ─────────────────────────────────────────────────────────────
+xcuserdata/
+*.xcworkspace/
+DerivedData/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# ── C++ / CMake ───────────────────────────────────────────────────────────────
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
 *.o
 *.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Linker files
-*.ilk
-
-# Debugger Files
-*.pdb
-
-# Compiled Dynamic libraries
+*.slo
+*.lo
+*.a
+*.la
+*.lai
+*.lib
 *.so
 *.dylib
 *.dll
-
-# Fortran module files
+*.ilk
+*.pdb
+*.dwo
+*.gch
+*.pch
 *.mod
 *.smod
+*.d
 
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
+# ── Executables ───────────────────────────────────────────────────────────────
 *.exe
 *.out
 *.app
 
-# debug information files
-*.dwo
-
-# C Build Directories
-bin/
-obj/
+# ── Claude Code ───────────────────────────────────────────────────────────────
+.claude/
 CLAUDE.md

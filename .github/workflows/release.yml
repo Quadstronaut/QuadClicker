@@ -1,0 +1,46 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build & Publish
+        run: dotnet publish windows/QuadClicker.csproj -c Release -r win-x64 --self-contained false -o artifacts/windows
+      - uses: actions/upload-artifact@v4
+        with:
+          name: QuadClicker-win-x64
+          path: artifacts/windows/
+
+  release:
+    needs: [build-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: QuadClicker-win-x64
+          path: release/windows
+
+      - name: Zip Windows artifact
+        run: zip -r QuadClicker-win-x64.zip release/windows/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            QuadClicker-win-x64.zip
+          generate_release_notes: true
+          draft: true
