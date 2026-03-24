@@ -1,0 +1,22 @@
+name: Build macOS
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: macos-14   # Apple Silicon runner (M1)
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # macOS implementation is planned for Phase 2.
+      # This job is a placeholder — it succeeds immediately once macos/ contains a build target.
+      - name: Placeholder
+        run: |
+          echo "macOS build — Phase 2 not yet started."
+          echo "Target: Swift + SwiftUI + CGEventPost, macOS 13 Ventura minimum."
+          exit 0
