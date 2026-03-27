@@ -1,6 +1,5 @@
 using System.IO;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace QuadClicker.Models;
 
@@ -15,8 +14,8 @@ public sealed class AppSettings
     public int         X                   { get; set; } = 0;
     public int         Y                   { get; set; } = 0;
     public int         StopAfterClicks     { get; set; } = 0;
-    public int         StopAfterSeconds    { get; set; } = 0;
-    public int         IdleWaitSeconds     { get; set; } = 0;
+    public double      StopAfterSeconds    { get; set; } = 0;
+    public double      IdleWaitSeconds     { get; set; } = 0;
     public bool        AlwaysOnTop         { get; set; } = false;
     public string      StartHotkeyText     { get; set; } = "";
     public string      StopHotkeyText      { get; set; } = "F10";
@@ -39,7 +38,7 @@ public sealed class AppSettings
                 return JsonSerializer.Deserialize<AppSettings>(json, JsonOptions) ?? new AppSettings();
             }
         }
-        catch { /* Corrupt or missing — use defaults */ }
+        catch { /* Corrupt or unreadable — fall back to defaults */ }
         return new AppSettings();
     }
 
@@ -50,6 +49,6 @@ public sealed class AppSettings
             Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);
             File.WriteAllText(SettingsPath, JsonSerializer.Serialize(this, JsonOptions));
         }
-        catch { /* Non-fatal */ }
+        catch { /* Non-fatal — settings loss is recoverable */ }
     }
 }

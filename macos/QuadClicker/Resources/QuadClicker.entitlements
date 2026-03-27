@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!--
+        App Sandbox is disabled.
+        CGEventPost (user-level input injection) and CGEventTap (global mouse capture)
+        are not available inside the App Sandbox without special entitlements that
+        Apple does not grant for distribution. An unsigned or Developer ID signed build
+        does not require the sandbox.
+    -->
+    <key>com.apple.security.app-sandbox</key>
+    <false/>
+
+    <!--
+        Allow the process to be trusted for Accessibility.
+        The user must still grant permission in System Settings → Privacy → Accessibility.
+    -->
+    <key>com.apple.security.automation.apple-events</key>
+    <true/>
+
+    <!-- Allow network access if needed for future features -->
+    <key>com.apple.security.network.client</key>
+    <false/>
+</dict>
+</plist>

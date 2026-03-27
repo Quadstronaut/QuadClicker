@@ -22,12 +22,24 @@ public sealed class ClickEngine
     private void Loop(ClickSession session, CancellationToken token)
     {
         int clicks = 0;
-        var startTime = DateTime.UtcNow;
 
-        var initialStatus = session.IdleWaitSeconds > 0
-            ? EngineStatus.WaitingForIdle
-            : EngineStatus.Clicking;
-        StatusChanged?.Invoke(initialStatus);
+        // ── Idle wait (once, before the click loop) ───────────────────────────
+        if (session.IdleWaitSeconds > 0)
+        {
+            StatusChanged?.Invoke(EngineStatus.WaitingForIdle);
+            var threshold = TimeSpan.FromSeconds(session.IdleWaitSeconds);
+            while (IdleDetector.GetIdleTime() < threshold && !token.IsCancellationRequested)
+                token.WaitHandle.WaitOne(100);
+
+            if (token.IsCancellationRequested)
+            {
+                StatusChanged?.Invoke(EngineStatus.Stopped);
+                return;
+            }
+        }
+
+        StatusChanged?.Invoke(EngineStatus.Clicking);
+        var startTime = DateTime.UtcNow;
 
         while (!token.IsCancellationRequested)
         {
@@ -36,23 +48,12 @@ public sealed class ClickEngine
             if (session.StopAfterSeconds > 0 &&
                 (DateTime.UtcNow - startTime).TotalSeconds >= session.StopAfterSeconds) break;
 
-            // ── Idle wait ─────────────────────────────────────────────────────
-            if (session.IdleWaitSeconds > 0)
-            {
-                var threshold = TimeSpan.FromSeconds(session.IdleWaitSeconds);
-                while (IdleDetector.GetIdleTime() < threshold && !token.IsCancellationRequested)
-                    token.WaitHandle.WaitOne(100);
-
-                if (token.IsCancellationRequested) break;
-                StatusChanged?.Invoke(EngineStatus.Clicking);
-            }
-
             // ── Position ──────────────────────────────────────────────────────
             if (!session.UseCurrentPosition)
                 NativeMethods.SetCursorPos(session.X, session.Y);
 
             // ── Click ─────────────────────────────────────────────────────────
-            InputInjector.Click(session.Button, session.ClickType);
+            InputInjector.Click(session.Button, session.ClickType, token);
             ClickCountUpdated?.Invoke(++clicks);
 
             // ── Delay ─────────────────────────────────────────────────────────

@@ -2,55 +2,59 @@ using System.Runtime.InteropServices;
 
 namespace QuadClicker.PInvoke;
 
-internal static class NativeMethods
+internal static partial class NativeMethods
 {
     // ── Console ───────────────────────────────────────────────────────────────
-    [DllImport("kernel32.dll", SetLastError = true)]
+    [LibraryImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool FreeConsole();
+    internal static partial bool FreeConsole();
 
     // ── Input injection ───────────────────────────────────────────────────────
+    // Kept as [DllImport]: INPUT[] array marshaling with source-gen requires unsafe pointers.
     [DllImport("user32.dll", SetLastError = true)]
     internal static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
 
     // ── Cursor ────────────────────────────────────────────────────────────────
-    [DllImport("user32.dll")]
-    internal static extern bool SetCursorPos(int x, int y);
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool SetCursorPos(int x, int y);
 
-    [DllImport("user32.dll")]
-    internal static extern bool GetCursorPos(out POINT lpPoint);
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool GetCursorPos(out POINT lpPoint);
 
     // ── Idle detection ────────────────────────────────────────────────────────
-    [DllImport("user32.dll")]
+    [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool GetLastInputInfo(ref LASTINPUTINFO plii);
+    internal static partial bool GetLastInputInfo(ref LASTINPUTINFO plii);
 
     // ── Low-level mouse hook ──────────────────────────────────────────────────
+    // SetWindowsHookEx kept as [DllImport]: [LibraryImport] does not support managed delegate parameters.
     [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
     internal static extern IntPtr SetWindowsHookEx(int idHook, LowLevelMouseProc lpfn, IntPtr hMod, uint dwThreadId);
 
-    [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    [LibraryImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool UnhookWindowsHookEx(IntPtr hhk);
+    internal static partial bool UnhookWindowsHookEx(IntPtr hhk);
 
-    [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-    internal static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
+    [LibraryImport("user32.dll", SetLastError = true)]
+    internal static partial IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
 
-    [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-    internal static extern IntPtr GetModuleHandle(string lpModuleName);
+    [LibraryImport("kernel32.dll", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+    internal static partial IntPtr GetModuleHandle(string lpModuleName);
 
     // ── Hotkeys ───────────────────────────────────────────────────────────────
-    [DllImport("user32.dll")]
+    [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
+    internal static partial bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
 
-    [DllImport("user32.dll")]
+    [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    internal static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+    internal static partial bool UnregisterHotKey(IntPtr hWnd, int id);
 
     // ── Double-click timing ───────────────────────────────────────────────────
-    [DllImport("user32.dll")]
-    internal static extern uint GetDoubleClickTime();
+    [LibraryImport("user32.dll")]
+    internal static partial uint GetDoubleClickTime();
 
     // ── Delegate ──────────────────────────────────────────────────────────────
     internal delegate IntPtr LowLevelMouseProc(int nCode, IntPtr wParam, IntPtr lParam);
@@ -95,8 +99,8 @@ internal static class NativeMethods
     }
 
     // ── Constants ─────────────────────────────────────────────────────────────
-    internal const int WH_MOUSE_LL = 14;
-    internal const int WM_HOTKEY   = 0x0312;
+    internal const int WH_MOUSE_LL  = 14;
+    internal const int WM_HOTKEY    = 0x0312;
     internal const int WM_LBUTTONUP = 0x0202;
 
     internal const uint INPUT_MOUSE = 0;

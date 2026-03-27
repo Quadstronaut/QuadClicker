@@ -16,6 +16,7 @@ internal sealed class LocationPicker : IDisposable
     private NativeMethods.LowLevelMouseProc? _proc;
     private IntPtr _hookId = IntPtr.Zero;
     private Window? _overlay;
+    private CancellationTokenSource? _pickCts;
     private bool _disposed;
 
     /// <summary>Raised on the UI thread when the user clicks a point.</summary>
@@ -26,13 +27,24 @@ internal sealed class LocationPicker : IDisposable
 
     internal void BeginPick(Window owner)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        // Cancel any in-progress pick delay
+        _pickCts?.Cancel();
+        _pickCts?.Dispose();
+        _pickCts = new CancellationTokenSource();
+        var cts = _pickCts;
+
         owner.WindowState = WindowState.Minimized;
 
-        // Wait for the minimize animation before showing the overlay
         Application.Current.Dispatcher.BeginInvoke(async () =>
         {
-            await Task.Delay(300);
-            ShowOverlay(owner);
+            try
+            {
+                await Task.Delay(300, cts.Token);
+                ShowOverlay(owner);
+            }
+            catch (OperationCanceledException) { }
         });
     }
 
@@ -68,7 +80,7 @@ internal sealed class LocationPicker : IDisposable
 
         _overlay.Show();
 
-        _proc  = HookCallback;
+        _proc   = HookCallback;
         _hookId = SetHook(_proc);
     }
 
@@ -89,7 +101,8 @@ internal sealed class LocationPicker : IDisposable
 
             NativeMethods.GetCursorPos(out var p);
 
-            Application.Current.Dispatcher.Invoke(() =>
+            // BeginInvoke (async) — never block inside a low-level hook callback
+            Application.Current.Dispatcher.BeginInvoke(() =>
             {
                 _overlay?.Close();
                 _overlay = null;
@@ -131,11 +144,22 @@ internal sealed class LocationPicker : IDisposable
     {
         if (!_disposed)
         {
+            _pickCts?.Cancel();
+            _pickCts?.Dispose();
+            _pickCts = null;
+
             if (_hookId != IntPtr.Zero)
             {
                 NativeMethods.UnhookWindowsHookEx(_hookId);
                 _hookId = IntPtr.Zero;
             }
+
+            Application.Current?.Dispatcher.Invoke(() =>
+            {
+                _overlay?.Close();
+                _overlay = null;
+            });
+
             _disposed = true;
         }
     }

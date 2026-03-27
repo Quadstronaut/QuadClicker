@@ -12,7 +12,8 @@ internal static class IdleDetector
         {
             cbSize = (uint)Marshal.SizeOf<NativeMethods.LASTINPUTINFO>()
         };
-        NativeMethods.GetLastInputInfo(ref info);
+        if (!NativeMethods.GetLastInputInfo(ref info))
+            return TimeSpan.Zero; // Can't determine idle time — treat as not idle
         uint idleMs = unchecked((uint)Environment.TickCount - info.dwTime);
         return TimeSpan.FromMilliseconds(idleMs);
     }

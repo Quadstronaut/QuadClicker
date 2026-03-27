@@ -32,11 +32,21 @@ internal sealed class TrayManager : IDisposable
         _icon.DoubleClick     += (_, _) => ShowWindowRequested?.Invoke();
     }
 
-    internal void Show() => _icon.Visible = true;
-    internal void Hide() => _icon.Visible = false;
+    internal void Show()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        _icon.Visible = true;
+    }
+
+    internal void Hide()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        _icon.Visible = false;
+    }
 
     internal void SetActiveState(bool isClicking)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         _icon.Text = isClicking ? "QuadClicker — Clicking" : "QuadClicker";
         // TODO: swap to animated icon when assets are available
     }

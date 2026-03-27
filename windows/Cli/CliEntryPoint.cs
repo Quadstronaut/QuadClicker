@@ -16,7 +16,8 @@ internal static class CliEntryPoint
 
         if (args.Length == 1 && args[0] is "--version" or "-v")
         {
-            Console.WriteLine("QuadClicker 1.0.0");
+            var ver = typeof(CliEntryPoint).Assembly.GetName().Version;
+            Console.WriteLine($"QuadClicker {ver?.ToString(3) ?? "unknown"}");
             return 0;
         }
 

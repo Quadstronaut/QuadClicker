@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Bundle identity -->
+    <key>CFBundleIdentifier</key>
+    <string>com.quadstronaut.quadclicker</string>
+
+    <key>CFBundleName</key>
+    <string>QuadClicker</string>
+
+    <key>CFBundleDisplayName</key>
+    <string>QuadClicker</string>
+
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+
+    <!-- Versioning -->
+    <key>CFBundleVersion</key>
+    <string>1</string>
+
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+
+    <!-- Minimum OS -->
+    <key>LSMinimumSystemVersion</key>
+    <string>13.0</string>
+
+    <!-- Hide from Dock — the app lives entirely in the menu bar -->
+    <key>LSUIElement</key>
+    <true/>
+
+    <!-- Required for global hotkeys and CGEventTap -->
+    <key>NSAccessibilityUsageDescription</key>
+    <string>QuadClicker needs Accessibility access to register global hotkeys and capture mouse coordinates.</string>
+
+    <!-- Required for CGEventPost when targeting other processes -->
+    <key>NSAppleEventsUsageDescription</key>
+    <string>QuadClicker needs to send mouse events to automate clicking.</string>
+
+    <!-- SwiftUI lifecycle -->
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
+
+    <key>NSHighResolutionCapable</key>
+    <true/>
+
+    <!-- Allow the app to function on all spaces / full-screen apps -->
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.utilities</string>
+</dict>
+</plist>
