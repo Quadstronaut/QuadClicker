@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=QuadClicker
+GenericName=Auto Clicker
+Comment=Open-source native auto-clicker utility
+Exec=quadclicker %U
+Icon=input-mouse
+Terminal=false
+Type=Application
+Categories=Utility;Accessibility;
+Keywords=click;autoclicker;mouse;automation;
+StartupWMClass=quadclicker
+MimeType=

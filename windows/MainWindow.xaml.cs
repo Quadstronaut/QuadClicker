@@ -187,8 +187,13 @@ public partial class MainWindow : Window
 
     private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
     {
-        e.Cancel = true; // Intercept; hide to tray instead
-        Hide();
+        // Allow close — OnClosed handles cleanup and app exits via OnMainWindowClose
+    }
+
+    private void Window_StateChanged(object sender, EventArgs e)
+    {
+        if (WindowState == WindowState.Minimized)
+            Hide();
     }
 
     private void RestoreFromTray()
@@ -201,16 +206,7 @@ public partial class MainWindow : Window
         });
     }
 
-    private void Quit()
-    {
-        SaveSettings();
-        _hotkeys?.Dispose();
-        _picker.Dispose();
-        _tray.Dispose();
-        _cts?.Cancel();
-        _cts?.Dispose();
-        Application.Current.Shutdown();
-    }
+    private void Quit() => Close(); // OnClosed handles cleanup
 
     // ── Engine callbacks ──────────────────────────────────────────────────────
 
@@ -446,8 +442,8 @@ public partial class MainWindow : Window
         int.TryParse(YBox.Text, out int py); s.Y = py;
 
         int.TryParse(StopClicksBox.Text, out int sc); s.StopAfterClicks = sc;
-        double.TryParse(StopSecondsBox.Text, out double ss); s.StopAfterSeconds = (int)ss;
-        double.TryParse(IdleBox.Text,        out double iw); s.IdleWaitSeconds  = (int)iw;
+        double.TryParse(StopSecondsBox.Text, out double ss); s.StopAfterSeconds = ss;
+        double.TryParse(IdleBox.Text,        out double iw); s.IdleWaitSeconds  = iw;
 
         s.AlwaysOnTop    = AlwaysOnTopBox.IsChecked == true;
         s.StartHotkeyText = StartHotkeyBox.Text;

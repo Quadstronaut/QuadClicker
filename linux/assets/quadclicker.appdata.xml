@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.quadstronaut.quadclicker</id>
+
+  <name>QuadClicker</name>
+  <summary>Open-source native auto-clicker utility</summary>
+
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+
+  <description>
+    <p>
+      QuadClicker is a configurable, scriptable auto-clicker built as a native
+      application for Linux. It provides both a graphical user interface and a
+      full command-line interface for headless use in scripts.
+    </p>
+    <p>Features:</p>
+    <ul>
+      <li>Configurable click rate: milliseconds, clicks/second, or clicks/minute</li>
+      <li>Left, right, and middle mouse button support</li>
+      <li>Single and double click modes</li>
+      <li>Fixed coordinate targeting or follow-cursor mode</li>
+      <li>Stop conditions: after N clicks, after N seconds</li>
+      <li>Idle detection: start only after system is idle for N seconds</li>
+      <li>Global hotkeys for start/stop</li>
+      <li>System tray integration</li>
+      <li>Full CLI with all GUI features available as arguments</li>
+      <li>Wayland and X11 support</li>
+    </ul>
+  </description>
+
+  <launchable type="desktop-id">quadclicker.desktop</launchable>
+
+  <url type="homepage">https://github.com/quadstronaut/quadclicker</url>
+  <url type="bugtracker">https://github.com/quadstronaut/quadclicker/issues</url>
+
+  <provides>
+    <binary>quadclicker</binary>
+  </provides>
+
+  <releases>
+    <release version="1.0.0" date="2025-01-01">
+      <description>
+        <p>Initial Linux release.</p>
+      </description>
+    </release>
+  </releases>
+
+  <content_rating type="oars-1.1" />
+
+  <categories>
+    <category>Utility</category>
+    <category>Accessibility</category>
+  </categories>
+
+  <keywords>
+    <keyword>autoclicker</keyword>
+    <keyword>mouse</keyword>
+    <keyword>automation</keyword>
+    <keyword>accessibility</keyword>
+  </keywords>
+</component>

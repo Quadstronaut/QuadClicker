@@ -8,10 +8,10 @@ public static class Program
     [STAThread]
     public static int Main(string[] args)
     {
-        bool minimized = args.Contains("--minimized");
+        bool minimized = args.Contains("--minimized", StringComparer.OrdinalIgnoreCase);
 
         // CLI mode: any argument other than --minimized triggers headless execution
-        bool isCli = args.Length > 0 && !minimized;
+        bool isCli = args.Any(a => !a.Equals("--minimized", StringComparison.OrdinalIgnoreCase));
         if (isCli)
             return CliEntryPoint.Run(args);
 

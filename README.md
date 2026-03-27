@@ -1,131 +1,232 @@
 # QuadClicker
 
-**A fast and configurable auto-clicker for Windows.**
+**A fast, native, open-source auto-clicker for Windows, macOS, and Linux.**
 
+[![Windows Build](https://github.com/Quadstronaut/QuadClicker/actions/workflows/build-windows.yml/badge.svg)](https://github.com/Quadstronaut/QuadClicker/actions/workflows/build-windows.yml)
+[![macOS Build](https://github.com/Quadstronaut/QuadClicker/actions/workflows/build-macos.yml/badge.svg)](https://github.com/Quadstronaut/QuadClicker/actions/workflows/build-macos.yml)
+[![Linux Build](https://github.com/Quadstronaut/QuadClicker/actions/workflows/build-linux.yml/badge.svg)](https://github.com/Quadstronaut/QuadClicker/actions/workflows/build-linux.yml)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey.svg)]()
-
----
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Features](#features)
-- [Getting Started](#getting-started)
-- [Usage](#usage)
-- [Contributing](#contributing)
-- [License](#license)
-- [Author](#author)
-- [Acknowledgements](#acknowledgements)
 
 ---
 
 ## Overview
 
-`QuadClicker` is a utility for automating mouse clicks on Windows. It is a WPF application written in C# and targeting .NET 8. It provides a simple UI to configure click rate, location, and stopping conditions.
+QuadClicker is the definitive open-source auto-clicker: fully configurable, scriptable via CLI, accessibility-first, and distributed everywhere. Built as a monorepo with three separate **native** applications — no cross-platform frameworks, ever.
 
-Developed by Quadstronaut (Kyle Green).
+| Platform | Language | Framework | Min OS |
+|---|---|---|---|
+| Windows 10/11 | C# / .NET 10 | WPF | Windows 10 22H2 |
+| macOS | Swift | SwiftUI | macOS 13 Ventura |
+| Linux | C++ | Qt6 | Ubuntu 22.04 / Fedora 38 |
+
+---
 
 ## Features
 
-*   **Configurable Click Rate:** Set the click interval in milliseconds, or as a frequency in clicks per second or per minute.
-*   **Flexible Click Location:**
-    *   Click at the current mouse cursor position.
-    *   Click at a fixed, specified X/Y coordinate.
-    *   Use the "Pick Location" tool to visually select a point on the screen.
-*   **Automatic Stop Conditions:**
-    *   Stop after a defined number of clicks.
-    *   Stop after a set duration in seconds.
-*   **Idle Detection:** Configure the auto-clicker to only run when the system has been idle for a specified time.
-*   **Emergency Hotkey:** Instantly stop the auto-clicker at any time by pressing the `F10` key.
+- **Click Rate** — Enter any format: `100ms`, `10/s`, `10cps`, `600/min`, `600cpm`, or a bare integer (ms)
+- **Mouse Button** — Left, Right, or Middle
+- **Click Type** — Single or Double (uses OS double-click interval)
+- **Location Modes**
+  - Current cursor position
+  - Fixed XY coordinate
+  - Visual overlay picker — click anywhere on screen to capture coordinates
+- **Stop Conditions** — After N clicks, after N seconds, or manual stop
+- **Idle Detection** — Wait for N seconds of system idle before starting
+- **Hotkeys** — Independently configurable start and stop hotkeys (global, works when minimized)
+- **System Tray** — Minimize to tray; close button quits
+- **Always on Top** — Optional float above all windows
+- **Settings Persistence** — All settings saved and restored between launches
+- **CLI Mode** — Same binary, full headless execution (see [CLI Reference](#cli-reference))
+- **Dark Theme** — Native dark mode with emerald green accent on all platforms
 
-## Getting Started
+---
 
-To build and run this project, you will need the [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) or a compatible version of Visual Studio.
+## Repository Structure
 
-### Building from the Command Line
+```
+QuadClicker/
+├── windows/         ← WPF / C# / .NET 10
+├── macos/           ← SwiftUI / Swift
+├── linux/           ← Qt6 / C++
+├── .github/
+│   └── workflows/   ← CI/CD for all three platforms + release
+├── ref_imgs/        ← Design reference screenshots
+├── PLAN.md          ← Living design document
+├── CODE_SIGNING.md  ← Signing and notarization guide
+└── README.md
+```
 
-1.  Clone the repository:
-    ```sh
-    git clone https://github.com/Quadstronaut/QuadClicker.git
-    ```
-2.  Navigate to the project directory:
-    ```sh
-    cd QuadClicker
-    ```
-3.  Build the project:
-    ```sh
-    dotnet build -c Release
-    ```
-4.  Run the application:
-    The executable will be located in `bin/Release/net8.0-windows/`.
-    ```sh
-    ./bin/Release/net8.0-windows/QuadClicker.exe
-    ```
+---
 
-### Building with Visual Studio
+## Building
 
-1.  Clone the repository.
-2.  Open the `QuadClicker.csproj` file in Visual Studio.
-3.  Set the build configuration to "Release".
-4.  Build the solution (F6).
-5.  Run the application (F5).
+### Windows
 
-## Usage
+**Requirements:** .NET 10 SDK, Windows 10 22H2+
 
-1.  **Configure Click Rate:** Enter a value in the "Click Rate" textbox.
-    *   `100ms` (milliseconds)
-    *   `10 times per second`
-    *   `600 times per minute`
-2.  **Choose Click Location:**
-    *   Select "Current Position" to click wherever your mouse is.
-    *   Select "Specific Position", then either manually enter the X and Y coordinates or use the "Pick Location" button to select a point on the screen.
-3.  **Set Optional Conditions:**
-    *   **Idle Time:** Set a number of seconds the system must be idle before clicking begins.
-    *   **Stop After (clicks):** Set a maximum number of clicks.
-    *   **Stop After (seconds):** Set a maximum duration for the clicking session.
-4.  **Start/Stop:**
-    *   Click the "Start" button to begin auto-clicking.
-    *   Click the "Stop" button or press `F10` to end the session.
+```bash
+# Build
+dotnet build windows/QuadClicker.csproj -c Release
+
+# Run tests
+dotnet test windows/Tests/QuadClicker.Tests.csproj
+
+# Publish self-contained
+dotnet publish windows/QuadClicker.csproj -c Release -r win-x64 --self-contained false -o artifacts/windows
+```
+
+### macOS
+
+**Requirements:** Xcode 15+, macOS 13+, Apple Developer account (for signing/notarization)
+
+```bash
+# Open in Xcode
+open macos/QuadClicker.xcodeproj
+
+# Build from command line
+xcodebuild -project macos/QuadClicker.xcodeproj \
+           -scheme QuadClicker \
+           -configuration Release \
+           -derivedDataPath artifacts/macos
+
+# Run tests
+xcodebuild test -project macos/QuadClicker.xcodeproj \
+                -scheme QuadClickerTests \
+                -destination 'platform=macOS'
+```
+
+> **Note:** `CGEventPost` and global hotkeys require Accessibility permission. The app prompts on first launch when hotkeys are configured. Code signing and notarization are required for distribution — see `CODE_SIGNING.md`.
+
+### Linux
+
+**Requirements:** Qt 6.2+, CMake 3.20+, GCC 11+ or Clang 13+, libXtst, libXss, libX11
+
+```bash
+# Install dependencies (Ubuntu/Debian)
+sudo apt install qt6-base-dev libxt-dev libxtst-dev libxss-dev cmake build-essential
+
+# Configure and build
+cmake -B build -DCMAKE_BUILD_TYPE=Release linux/
+cmake --build build --parallel
+
+# Run tests
+cd build && ctest --output-on-failure
+
+# Install
+sudo cmake --install build
+```
+
+---
+
+## CLI Reference
+
+When any argument other than `--minimized` is passed, the app runs headless with no GUI.
+
+```
+quadclicker [OPTIONS]
+```
+
+| Argument | Type | Default | Description |
+|---|---|---|---|
+| `--rate <value>` | string | required | Click rate. Formats: `100ms` · `10/s` · `600/min` |
+| `--button <left\|right\|middle>` | enum | `left` | Mouse button |
+| `--type <single\|double>` | enum | `single` | Click type |
+| `--location <x,y>` | int pair | cursor | Fixed screen coordinate |
+| `--stop-after-clicks <n>` | int | 0 (unlimited) | Stop after N clicks |
+| `--stop-after-seconds <n>` | float | 0 (unlimited) | Stop after N seconds |
+| `--idle-wait <n>` | float | 0 (disabled) | Wait for N seconds of idle before starting |
+| `--no-gui` | flag | auto | Force headless mode |
+| `--minimized` | flag | off | Launch GUI minimized to tray |
+| `--version` | flag | — | Print version and exit 0 |
+| `--help` | flag | — | Print usage and exit 0 |
+
+**Exit codes:** `0` success · `1` invalid argument · `2` runtime error · `130` Ctrl+C
+
+**Examples:**
+
+```bash
+# Click at cursor, 10 times/second
+quadclicker --rate 10/s
+
+# Right-click at (500,300), stop after 100 clicks
+quadclicker --rate 10/s --location 500,300 --button right --stop-after-clicks 100
+
+# Double-click every 2 seconds for 30 seconds
+quadclicker --rate 2000ms --type double --stop-after-seconds 30
+
+# Click after 5 seconds of idle
+quadclicker --rate 1000ms --idle-wait 5
+
+# Launch GUI minimized to tray
+quadclicker --minimized
+```
+
+---
+
+## Design System
+
+| Token | Value | Usage |
+|---|---|---|
+| Accent | `#50C878` | Start button, focus rings, active status |
+| Accent Hover | `#3DAF62` | Hover state |
+| Accent Pressed | `#2E9150` | Pressed state |
+| Danger | `#E05252` | Stop button, errors |
+| Background | `#1A1A1A` | Window background |
+| Surface | `#242424` | Input backgrounds |
+| Border | `#3A3A3A` | Input borders |
+| Text Primary | `#F0F0F0` | Main text |
+| Text Secondary | `#9A9A9A` | Labels, helpers |
+| Status Waiting | `#E0A030` | Idle wait indicator |
+
+---
+
+## Settings
+
+Settings are persisted automatically on exit and loaded on launch. JSON format is identical across platforms for cross-platform compatibility.
+
+| Platform | Path |
+|---|---|
+| Windows | `%APPDATA%\QuadClicker\settings.json` |
+| macOS | `~/Library/Application Support/QuadClicker/settings.json` |
+| Linux | `~/.config/quadclicker/settings.json` |
+
+---
+
+## Phase Status
+
+| Phase | Description | Status |
+|---|---|---|
+| 0 | Monorepo restructure + CI/CD skeleton | ✅ Done |
+| 1 | Windows WPF — feature-complete | ✅ Done |
+| 2 | macOS SwiftUI — feature-complete | 🔨 Code written, needs Mac + Xcode to build |
+| 3 | Linux Qt6/C++ — feature-complete | 🔨 Code written, needs Linux + Qt6 to build |
 
 ---
 
 ## Contributing
 
-Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+1. Fork the repo
+2. Create a feature branch (`git checkout -b feature/my-feature`)
+3. Commit your changes
+4. Push and open a Pull Request
 
-If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
-Don't forget to give the project a star! Thanks again!
-
-1.  Fork the Project
-2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4.  Push to the Branch (`git push origin feature/AmazingFeature`)
-5.  Open a Pull Request
+Please open an issue first for major changes.
 
 ---
 
 ## License
 
 Copyright © 2026 Quadstronaut (Kyle Green).
-
-This project is licensed under the terms of the GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007. See the `LICENSE` file in the project root for the full license text.
+Licensed under the [GNU General Public License v3.0](LICENSE).
 
 ---
 
 ## Author
 
-**Kyle Green (Quadstronaut)**
-
-*   Project Link: [https://github.com/Quadstronaut/QuadClicker](https://github.com/Quadstronaut/QuadClicker)
+**Kyle Green (Quadstronaut)** — [github.com/Quadstronaut/QuadClicker](https://github.com/Quadstronaut/QuadClicker)
 
 ---
 
 ## Acknowledgements
 
-*   Inspired by [Autoclick by Mahdi Bchatnia](https://mahdi.jp/apps/autoclick) (2011-2021 - GNU GPLv2)
-*   Thanks to all contributors who help improve this project.
-
----
-
-**Happy Clicking! 🖱️**
+Inspired by [Autoclick by Mahdi Bchatnia](https://mahdi.jp/apps/autoclick) (2011–2021, GNU GPLv2)

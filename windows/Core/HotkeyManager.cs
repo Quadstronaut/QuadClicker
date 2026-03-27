@@ -15,6 +15,7 @@ internal sealed class HotkeyManager : IDisposable
     /// <summary>Registers a hotkey. Returns the hotkey ID on success, -1 on failure.</summary>
     internal int Register(uint modifiers, uint vk, Action handler)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         int id = _nextId++;
         if (NativeMethods.RegisterHotKey(_hwnd, id, modifiers, vk))
         {
