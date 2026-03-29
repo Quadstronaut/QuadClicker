@@ -2,6 +2,7 @@ name: Release
 
 on:
   push:
+    branches: [master]
     tags:
       - 'v*'
 
@@ -13,6 +14,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
+          include-prerelease: true
       - name: Build & Publish
         run: dotnet publish windows/QuadClicker.csproj -c Release -r win-x64 --self-contained false -o artifacts/windows
       - uses: actions/upload-artifact@v4
@@ -27,6 +29,20 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate version tag
+        id: version
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+            echo "is_manual_tag=true" >> "$GITHUB_OUTPUT"
+          else
+            TAG="v0.0.0-dev.$(date +%Y%m%d).${GITHUB_SHA::7}"
+            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+            echo "is_manual_tag=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Download Windows artifact
         uses: actions/download-artifact@v4
@@ -40,7 +56,9 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.version.outputs.tag }}
           files: |
             QuadClicker-win-x64.zip
           generate_release_notes: true
-          draft: true
+          prerelease: ${{ steps.version.outputs.is_manual_tag == 'false' }}
+          make_latest: ${{ steps.version.outputs.is_manual_tag == 'true' }}
