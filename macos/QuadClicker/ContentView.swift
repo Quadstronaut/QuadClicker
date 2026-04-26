@@ -50,8 +50,11 @@ extension Color {
 final class ClickerViewModel: ObservableObject {
 
     // ── Form fields ───────────────────────────────────────────────────────────
-    @Published var clickRateValue: String = "100"
-    @Published var clickRateUnit: String  = "ms"   // "ms" | "/s" | "/min"
+    @Published var clickRateMode: ClickRateMode = .delay
+    @Published var clickRateValue: String       = "100"
+    @Published var clickRateUnit: String        = "ms"   // canonical Tag — see DelayUnits / FrequencyUnits below
+    @Published var rateHintText: String         = ""
+    @Published var rateHintIsWarning: Bool      = false
     @Published var button: MouseButton    = .left
     @Published var clickType: ClickType   = .single
     @Published var useCurrentPosition: Bool = true
@@ -87,6 +90,94 @@ final class ClickerViewModel: ObservableObject {
         self.settings = settings
         loadSettings()
         setupCallbacks()
+        updateRateHint()
+    }
+
+    // ── Click Rate units (canonical tags + display strings) ───────────────────
+
+    static let delayUnits: [(tag: String, display: String)] = [
+        ("ms",  "ms"),
+        ("sec", "seconds"),
+        ("min", "minutes"),
+    ]
+
+    static let frequencyUnits: [(tag: String, display: String)] = [
+        ("per_sec",  "per second"),
+        ("per_min",  "per minute"),
+        ("per_hour", "per hour"),
+    ]
+
+    func currentUnits() -> [(tag: String, display: String)] {
+        clickRateMode == .frequency ? Self.frequencyUnits : Self.delayUnits
+    }
+
+    /// Translate canonical (mode, value, unitTag) → parser DSL string.
+    func composeRateString() -> String {
+        let v = clickRateValue.trimmingCharacters(in: .whitespaces)
+        switch clickRateUnit {
+        case "ms":       return v + "ms"
+        case "sec":      return v + "s"
+        case "min":      return v + "min"
+        case "per_sec":  return v + "/s"
+        case "per_min":  return v + "/min"
+        case "per_hour": return v + "/h"
+        default:         return v + "ms"
+        }
+    }
+
+    func updateRateHint() {
+        if clickRateValue.trimmingCharacters(in: .whitespaces).isEmpty {
+            rateHintText = ""; rateHintIsWarning = false; return
+        }
+        switch ClickRateParser.parse(composeRateString()) {
+        case .failure:
+            rateHintText = ""; rateHintIsWarning = false
+        case .success(let secs):
+            let ms = secs * 1000.0
+            let cps = 1000.0 / ms
+            let veryFast = cps > 100.0
+            let conv: String = (clickRateMode == .delay) ? Self.formatRate(cps: cps)
+                                                         : Self.formatDelay(ms: ms)
+            if veryFast {
+                rateHintText = "⚠ Very fast — input may not register reliably  (≈ \(conv))"
+                rateHintIsWarning = true
+            } else {
+                rateHintText = "≈ \(conv)"
+                rateHintIsWarning = false
+            }
+        }
+    }
+
+    private static func formatRate(cps: Double) -> String {
+        if cps >= 1.0       { return "\(trim(cps)) clicks/sec" }
+        let cpm = cps * 60.0
+        if cpm >= 1.0       { return "\(trim(cpm)) clicks/min" }
+        return "\(trim(cps * 3600.0)) clicks/hour"
+    }
+
+    private static func formatDelay(ms: Double) -> String {
+        if ms < 1000        { return "\(trim(ms)) ms between clicks" }
+        if ms < 60_000      { return "\(trim(ms / 1000.0)) sec between clicks" }
+        if ms < 3_600_000   { return "\(trim(ms / 60_000.0)) min between clicks" }
+        return "\(trim(ms / 3_600_000.0)) hours between clicks"
+    }
+
+    private static func trim(_ v: Double) -> String {
+        if abs(v - v.rounded()) < 0.005 {
+            return String(Int64(v.rounded()))
+        }
+        return String(format: "%.2f", v).replacingOccurrences(of: #"0+$"#, with: "", options: .regularExpression)
+                                        .replacingOccurrences(of: #"\.$"#, with: "", options: .regularExpression)
+    }
+
+    /// Called when the Mode segmented control changes. Falls back to the matching mode's first unit
+    /// if the previously-selected tag isn't valid in the new mode.
+    func clickRateModeChanged() {
+        let valid = currentUnits().map { $0.tag }
+        if !valid.contains(clickRateUnit) {
+            clickRateUnit = clickRateMode == .frequency ? "per_sec" : "ms"
+        }
+        updateRateHint()
     }
 
     // ── Callbacks ─────────────────────────────────────────────────────────────
@@ -164,12 +255,8 @@ final class ClickerViewModel: ObservableObject {
 
     /// Returns a ClickSession, or nil and sets errorMessage on failure.
     private func buildSession() -> ClickSession? {
-        let combined = clickRateUnit == "ms"
-            ? (clickRateValue + "ms")
-            : (clickRateValue + clickRateUnit)
-
         let rate: TimeInterval
-        switch ClickRateParser.parse(combined) {
+        switch ClickRateParser.parse(composeRateString()) {
         case .success(let r): rate = r
         case .failure(let e): errorMessage = e; return nil
         }
@@ -241,6 +328,7 @@ final class ClickerViewModel: ObservableObject {
     // ── Settings persistence ──────────────────────────────────────────────────
 
     func loadSettings() {
+        clickRateMode       = settings.clickRateMode
         clickRateValue      = settings.clickRateValue
         clickRateUnit       = settings.clickRateUnit
         button              = settings.button
@@ -258,6 +346,7 @@ final class ClickerViewModel: ObservableObject {
     }
 
     func saveSettings() {
+        settings.clickRateMode      = clickRateMode
         settings.clickRateValue     = clickRateValue
         settings.clickRateUnit      = clickRateUnit
         settings.button             = button
@@ -288,7 +377,7 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 0) {
             formContent
         }
-        .frame(width: 420, height: 480)
+        .frame(width: 420, height: 510)
         .background(Color.qcBackground)
         .foregroundColor(Color.qcTextPrimary)
         .onAppear {
@@ -334,23 +423,45 @@ struct ContentView: View {
     // ── Click Rate ────────────────────────────────────────────────────────────
 
     private var clickRateRow: some View {
-        HStack {
+        HStack(alignment: .top) {
             label("Click Rate:")
                 .frame(width: 155, alignment: .leading)
-            HStack(spacing: 6) {
-                QCTextField(text: $vm.clickRateValue)
-                    .frame(width: 80)
-                    .help("Enter a number. Unit selected to the right.")
-                Picker("", selection: $vm.clickRateUnit) {
-                    Text("ms").tag("ms")
-                    Text("/s").tag("/s")
-                    Text("/min").tag("/min")
+                .padding(.top, 4)
+            VStack(alignment: .leading, spacing: 4) {
+                // Mode picker
+                HStack(spacing: 16) {
+                    radioButton(label: "Delay", isSelected: vm.clickRateMode == .delay) {
+                        vm.clickRateMode = .delay
+                        vm.clickRateModeChanged()
+                    }
+                    radioButton(label: "Frequency", isSelected: vm.clickRateMode == .frequency) {
+                        vm.clickRateMode = .frequency
+                        vm.clickRateModeChanged()
+                    }
                 }
-                .pickerStyle(.menu)
-                .frame(width: 80)
-                .help("Unit for the click rate value")
-                .background(Color.qcSurface)
-                .cornerRadius(4)
+                // Value + Unit
+                HStack(spacing: 6) {
+                    QCTextField(text: $vm.clickRateValue)
+                        .frame(width: 80)
+                        .help("Enter a number. Unit selected on the right.")
+                        .onChange(of: vm.clickRateValue) { _ in vm.updateRateHint() }
+                    Picker("", selection: $vm.clickRateUnit) {
+                        ForEach(vm.currentUnits(), id: \.tag) { u in
+                            Text(u.display).tag(u.tag)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .frame(width: 110)
+                    .help("Unit for the click rate value")
+                    .background(Color.qcSurface)
+                    .cornerRadius(4)
+                    .onChange(of: vm.clickRateUnit) { _ in vm.updateRateHint() }
+                }
+                // Hint
+                Text(vm.rateHintText)
+                    .font(.system(size: 11))
+                    .foregroundColor(vm.rateHintIsWarning ? Color.qcDanger : Color.qcTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -570,7 +681,7 @@ struct ContentView: View {
         window.isMovableByWindowBackground = false
         window.level = vm.alwaysOnTop ? .floating : .normal
         window.backgroundColor = NSColor(Color.qcBackground)
-        window.setContentSize(NSSize(width: 420, height: 480))
+        window.setContentSize(NSSize(width: 420, height: 510))
         window.center()
     }
 
