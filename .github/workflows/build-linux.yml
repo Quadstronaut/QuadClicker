@@ -8,15 +8,31 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v4
 
-      # Linux implementation is planned for Phase 3.
-      # This job is a placeholder — it succeeds immediately once linux/ contains a build target.
-      - name: Placeholder
+      - name: Install build dependencies
         run: |
-          echo "Linux build — Phase 3 not yet started."
-          echo "Target: Qt6 / C++, XTest (X11) + uinput (Wayland)."
-          exit 0
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq \
+            build-essential cmake ninja-build pkg-config \
+            qt6-base-dev qt6-base-dev-tools qt6-tools-dev \
+            libqt6svg6-dev libxtst-dev libxss-dev
+
+      - name: Configure
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -S linux
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: quadclicker-linux-x64
+          path: build/quadclicker
+          if-no-files-found: error

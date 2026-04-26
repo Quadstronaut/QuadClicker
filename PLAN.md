@@ -654,6 +654,8 @@ quadclicker --minimized
 - AppImage is self-contained (ldd shows no unexpected external deps)
 - Unit tests pass
 
+**Status (2026-04-25):** Build is **verified** on Ubuntu 24.04 LTS (Qt 6.4.2, GCC 13.3) under WSL2/WSLg. All three test suites pass (`ClickRateParserTests`, `ClickSessionTests`, `CliArgumentTests`). CLI mode handles happy-path (`--rate`, `--stop-after-clicks`, `--location`) and parse-error paths (exit 1 on bad arg) correctly. GUI launches and renders the Taneth palette. CI workflow `build-linux.yml` now runs the real build. **Remaining:** Wayland (`uinput`) injection path is unexercised under WSL — needs a real Linux desktop session. Fedora build, AppImage / `.deb` packaging not yet done.
+
 ---
 
 ### Phase 4: Distribution — Package Managers, Code Signing, Releases

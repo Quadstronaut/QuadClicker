@@ -16,13 +16,17 @@
 #include <QLabel>
 #include <QButtonGroup>
 #include <QCloseEvent>
-#include <QChangeEvent>
+#include <QEvent>
 #include <QKeyEvent>
 
 namespace QuadClicker {
 
+class HotkeyEditFilter;
+
 class MainWindow : public QMainWindow {
     Q_OBJECT
+
+    friend class HotkeyEditFilter;
 
 public:
     explicit MainWindow(QWidget* parent = nullptr);
