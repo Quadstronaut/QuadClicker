@@ -74,6 +74,7 @@ set(MODEL_SOURCES
     src/models/ClickSession.h
     src/models/MouseButton.h
     src/models/ClickType.h
+    src/models/ClickRateMode.h
 )
 
 set(CLI_SOURCES
