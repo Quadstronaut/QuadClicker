@@ -55,15 +55,12 @@ jobs:
           name: QuadClicker-win-x64
           path: release/windows
 
-      - name: Zip Windows artifact
-        run: zip -r QuadClicker-win-x64.zip release/windows/
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           files: |
-            QuadClicker-win-x64.zip
+            release/windows/QuadClicker.exe
           generate_release_notes: true
           prerelease: ${{ steps.version.outputs.is_manual_tag == 'false' }}
           make_latest: ${{ steps.version.outputs.is_manual_tag == 'true' }}
