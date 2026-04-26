@@ -2,6 +2,7 @@
 
 #include "MouseButton.h"
 #include "ClickType.h"
+#include "ClickRateMode.h"
 #include <QString>
 
 namespace QuadClicker {
@@ -10,6 +11,7 @@ namespace QuadClicker {
 /// JSON keys match the Windows implementation for cross-platform compatibility.
 class AppSettings {
 public:
+    ClickRateMode clickRateMode{ClickRateMode::Delay};
     QString     clickRateValue{QStringLiteral("100")};
     QString     clickRateUnit{QStringLiteral("ms")};
     MouseButton button{MouseButton::Left};
