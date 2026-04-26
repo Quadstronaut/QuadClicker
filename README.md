@@ -37,7 +37,7 @@ QuadClicker is the definitive open-source auto-clicker: fully configurable, scri
 - **Always on Top** — Optional float above all windows
 - **Settings Persistence** — All settings saved and restored between launches
 - **CLI Mode** — Same binary, full headless execution (see [CLI Reference](#cli-reference))
-- **Dark Theme** — Native dark mode with emerald green accent on all platforms
+- **Dark Theme** — Native dark mode. Windows ships the new "Taneth" palette (deep-green hull, warm gold HUD accent); macOS and Linux still ship the original emerald-green palette in source until the redesign is ported.
 
 ---
 
@@ -71,8 +71,8 @@ dotnet build windows/QuadClicker.csproj -c Release
 # Run tests
 dotnet test windows/Tests/QuadClicker.Tests.csproj
 
-# Publish self-contained
-dotnet publish windows/QuadClicker.csproj -c Release -r win-x64 --self-contained false -o artifacts/windows
+# Publish self-contained single-file (matches release.yml)
+dotnet publish windows/QuadClicker.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -o artifacts/windows
 ```
 
 ### macOS
@@ -154,6 +154,12 @@ quadclicker --rate 10/s --location 500,300 --button right --stop-after-clicks 10
 # Double-click every 2 seconds for 30 seconds
 quadclicker --rate 2000ms --type double --stop-after-seconds 30
 
+# One click per minute, for an hour (using the new units)
+quadclicker --rate 60/h --stop-after-seconds 3600
+
+# One click every 5 minutes
+quadclicker --rate 5min
+
 # Click after 5 seconds of idle
 quadclicker --rate 1000ms --idle-wait 5
 
@@ -165,18 +171,24 @@ quadclicker --minimized
 
 ## Design System
 
+The Windows app ships the **Taneth** palette: a deep-green hull background with a warm gold HUD accent. macOS and Linux still ship the original emerald-green tokens in source — porting the new palette is tracked under the Phase 2/3 follow-ups.
+
 | Token | Value | Usage |
 |---|---|---|
-| Accent | `#50C878` | Start button, focus rings, active status |
-| Accent Hover | `#3DAF62` | Hover state |
-| Accent Pressed | `#2E9150` | Pressed state |
-| Danger | `#E05252` | Stop button, errors |
-| Background | `#1A1A1A` | Window background |
-| Surface | `#242424` | Input backgrounds |
-| Border | `#3A3A3A` | Input borders |
-| Text Primary | `#F0F0F0` | Main text |
-| Text Secondary | `#9A9A9A` | Labels, helpers |
-| Status Waiting | `#E0A030` | Idle wait indicator |
+| Accent | `#E8B547` | Start button, focus rings, active status (gold) |
+| Accent Hover | `#F5C75A` | Hover on accent elements |
+| Accent Pressed | `#B88A2A` | Pressed state |
+| Accent Foreground | `#0A1410` | Dark text on accent fills |
+| Danger | `#E04030` | Stop button, errors |
+| Danger Hover | `#C8331E` | Hover on danger elements |
+| Background | `#0A1410` | Window background |
+| Surface | `#13211C` | Input backgrounds |
+| Surface Elevated | `#1B2E27` | Raised surfaces (small buttons, hover items) |
+| Border | `#2D5448` | Input borders |
+| Text Primary | `#E8DCB0` | Main text |
+| Text Secondary | `#7A9088` | Labels, helpers |
+| Text Disabled | `#3D5048` | Disabled text |
+| Status Waiting | `#5BA89A` | Idle wait indicator |
 
 ---
 
@@ -197,9 +209,29 @@ Settings are persisted automatically on exit and loaded on launch. JSON format i
 | Phase | Description | Status |
 |---|---|---|
 | 0 | Monorepo restructure + CI/CD skeleton | ✅ Done |
-| 1 | Windows WPF — feature-complete | ✅ Done |
-| 2 | macOS SwiftUI — feature-complete | 🔨 Code written, needs Mac + Xcode to build |
-| 3 | Linux Qt6/C++ — feature-complete | 🔨 Code written, needs Linux + Qt6 to build |
+| 1 | Windows WPF — released **v0.1.0** as a self-contained single-file EXE | ✅ Done |
+| 2 | macOS SwiftUI — code-complete, **unverified** (never compiled or run; `build-macos.yml` is a no-op placeholder) | 🔨 Pending Mac + Xcode |
+| 3 | Linux Qt6/C++ — code-complete, **unverified** (never compiled or run; `build-linux.yml` is a no-op placeholder) | 🔨 Pending Linux + Qt6 |
+
+### Known limitations
+
+- The mode-based **Click Rate** redesign (Delay vs Frequency radio, live conversion hint, >100/s warning) and the **Taneth** color palette are **Windows-only** at this time. The macOS and Linux source still uses the original single-row click-rate input and the emerald-green palette; both are scheduled to be brought to parity once their builds are verified.
+
+---
+
+## Releases / Downloads
+
+Latest builds are published on GitHub Releases:
+
+**[github.com/Quadstronaut/QuadClicker/releases/latest](https://github.com/Quadstronaut/QuadClicker/releases/latest)**
+
+| Platform | Status | Notes |
+|---|---|---|
+| Windows x64 | `QuadClicker-win-x64.zip` | Self-contained single-file EXE — **no .NET install required**. Unzip and run. |
+| macOS | Not yet released | Phase 2 build is unverified; no signed/notarized artifact yet. |
+| Linux | Not yet released | Phase 3 build is unverified; no `.deb` / `.rpm` / AppImage yet. |
+
+The Windows binary is currently **unsigned** — Windows SmartScreen will warn on first launch until an Authenticode certificate is in place (see `CODE_SIGNING.md`).
 
 ---
 
