@@ -23,7 +23,7 @@ QuadClicker is the definitive open-source auto-clicker: fully configurable, scri
 
 ## Features
 
-- **Click Rate** — Enter any format: `100ms`, `10/s`, `10cps`, `600/min`, `600cpm`, or a bare integer (ms)
+- **Click Rate** — Pick **Delay** (`ms` / `sec` / `min`) or **Frequency** (per sec / per min / per hour) via radio. CLI also accepts free-form: `100ms`, `5s`, `2min`, `10/s`, `10cps`, `600/min`, `600cpm`, `60/h`, `60cph`, or a bare integer (ms). Bounds: 1 ms ≤ delay ≤ 360 min.
 - **Mouse Button** — Left, Right, or Middle
 - **Click Type** — Single or Double (uses OS double-click interval)
 - **Location Modes**
@@ -128,7 +128,7 @@ quadclicker [OPTIONS]
 
 | Argument | Type | Default | Description |
 |---|---|---|---|
-| `--rate <value>` | string | required | Click rate. Formats: `100ms` · `10/s` · `600/min` |
+| `--rate <value>` | string | required | Click rate. Formats: `100ms` · `5s` · `2min` · `10/s` · `600/min` · `60/h` (1 ms – 360 min) |
 | `--button <left\|right\|middle>` | enum | `left` | Mouse button |
 | `--type <single\|double>` | enum | `single` | Click type |
 | `--location <x,y>` | int pair | cursor | Fixed screen coordinate |

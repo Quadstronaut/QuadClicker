@@ -31,6 +31,7 @@
     <Compile Include="..\Core\InputInjector.cs" />
     <Compile Include="..\PInvoke\NativeMethods.cs" />
     <Compile Include="..\Models\AppSettings.cs" />
+    <Compile Include="..\Models\ClickRateMode.cs" />
   </ItemGroup>
 
 </Project>
