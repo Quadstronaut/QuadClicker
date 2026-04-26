@@ -152,12 +152,11 @@ internal sealed class LocationPicker : IDisposable
 
     private static IntPtr SetHook(NativeMethods.LowLevelMouseProc proc)
     {
-        // Pass NULL for hMod — Win32 returns the EXE's HMODULE. This is the
-        // documented-safe form for WH_MOUSE_LL and avoids name-lookup edge
-        // cases on apphost / single-file deployments where the previous
-        // GetModuleHandle("QuadClicker.exe") call could silently return 0.
-        return NativeMethods.SetWindowsHookEx(NativeMethods.WH_MOUSE_LL, proc,
-            NativeMethods.GetModuleHandle(null), 0);
+        // Use the assembly's HINSTANCE directly. Avoids GetModuleHandle, whose
+        // [LibraryImport] form doesn't auto-resolve the A/W suffix and would
+        // throw EntryPointNotFoundException at runtime.
+        var hMod = Marshal.GetHINSTANCE(typeof(LocationPicker).Module);
+        return NativeMethods.SetWindowsHookEx(NativeMethods.WH_MOUSE_LL, proc, hMod, 0);
     }
 
     // ── Diagnostics ───────────────────────────────────────────────────────────
