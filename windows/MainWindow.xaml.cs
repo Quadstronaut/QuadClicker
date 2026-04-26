@@ -245,12 +245,15 @@ public partial class MainWindow : Window
     {
         XBox.Text = x.ToString();
         YBox.Text = y.ToString();
+        // Window_StateChanged hid the window when BeginPick minimized it; Show() is needed to undo that.
+        Show();
         WindowState = WindowState.Normal;
         Activate();
     }
 
     private void OnPickCancelled()
     {
+        Show();
         WindowState = WindowState.Normal;
         Activate();
     }
