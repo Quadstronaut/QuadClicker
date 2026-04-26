@@ -152,11 +152,12 @@ internal sealed class LocationPicker : IDisposable
 
     private static IntPtr SetHook(NativeMethods.LowLevelMouseProc proc)
     {
-        // Use the assembly's HINSTANCE directly. Avoids GetModuleHandle, whose
-        // [LibraryImport] form doesn't auto-resolve the A/W suffix and would
-        // throw EntryPointNotFoundException at runtime.
-        var hMod = Marshal.GetHINSTANCE(typeof(LocationPicker).Module);
-        return NativeMethods.SetWindowsHookEx(NativeMethods.WH_MOUSE_LL, proc, hMod, 0);
+        // Pass NULL — Win32 substitutes the EXE's HMODULE. Works for both
+        // single-file (bundled) and regular publish modes; Marshal.GetHINSTANCE
+        // returns -1 in single-file mode because managed assemblies are
+        // embedded rather than loaded from disk.
+        return NativeMethods.SetWindowsHookEx(NativeMethods.WH_MOUSE_LL, proc,
+            NativeMethods.GetModuleHandle(null), 0);
     }
 
     // ── Diagnostics ───────────────────────────────────────────────────────────
