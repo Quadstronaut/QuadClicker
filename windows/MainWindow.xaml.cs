@@ -30,6 +30,23 @@ public partial class MainWindow : Window
     // ── Hotkey capture state ──────────────────────────────────────────────────
     private TextBox? _capturingHotkeyBox;
 
+    // ── Click rate UI state ───────────────────────────────────────────────────
+    private bool _rateUiReady;
+
+    private static readonly (string Tag, string Display)[] DelayUnits =
+    {
+        ("ms",  "ms"),
+        ("sec", "seconds"),
+        ("min", "minutes"),
+    };
+
+    private static readonly (string Tag, string Display)[] FrequencyUnits =
+    {
+        ("per_sec",  "per second"),
+        ("per_min",  "per minute"),
+        ("per_hour", "per hour"),
+    };
+
     // ── Settings ──────────────────────────────────────────────────────────────
     private AppSettings Settings => ((App)Application.Current).Settings;
 
@@ -245,11 +262,7 @@ public partial class MainWindow : Window
         session = null;
         error   = string.Empty;
 
-        string rateText = ClickRateValueBox.Text.Trim();
-        string unit     = (ClickRateUnitBox.SelectedItem as ComboBoxItem)?.Tag as string ?? "ms";
-        string combined = unit == "ms" ? rateText + "ms" : rateText + unit;
-
-        if (!ClickRateParser.TryParse(combined, out var delay, out error))
+        if (!ClickRateParser.TryParse(ComposeRateString(), out var delay, out error))
             return false;
 
         if (!int.TryParse(StopClicksBox.Text, out int stopClicks) || stopClicks < 0)
@@ -340,6 +353,123 @@ public partial class MainWindow : Window
         return vk != 0;
     }
 
+    // ── Click rate UI ─────────────────────────────────────────────────────────
+
+    private void ClickRateMode_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!IsInitialized) return;
+
+        bool isFrequency = ModeFrequency.IsChecked == true;
+        var units = isFrequency ? FrequencyUnits : DelayUnits;
+        string fallback = isFrequency ? "per_sec" : "ms";
+
+        // Try to keep the user's saved unit if it belongs to the new mode; otherwise fallback.
+        string desired = (ClickRateUnitBox.SelectedItem as ComboBoxItem)?.Tag as string ?? fallback;
+        PopulateUnitBox(units, desired, fallback);
+        UpdateRateHint();
+    }
+
+    private void ClickRateInput_Changed(object sender, TextChangedEventArgs e) =>
+        UpdateRateHint();
+
+    private void ClickRateUnit_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
+        UpdateRateHint();
+
+    private void PopulateUnitBox((string Tag, string Display)[] units, string desiredTag, string fallbackTag)
+    {
+        ClickRateUnitBox.Items.Clear();
+        ComboBoxItem? toSelect = null;
+        ComboBoxItem? fallback = null;
+        foreach (var (tag, display) in units)
+        {
+            var item = new ComboBoxItem { Content = display, Tag = tag };
+            ClickRateUnitBox.Items.Add(item);
+            if (tag == desiredTag) toSelect = item;
+            if (tag == fallbackTag) fallback = item;
+        }
+        (toSelect ?? fallback ?? (ComboBoxItem)ClickRateUnitBox.Items[0]!).IsSelected = true;
+    }
+
+    private string ComposeRateString()
+    {
+        string value = ClickRateValueBox.Text.Trim();
+        string unit  = (ClickRateUnitBox.SelectedItem as ComboBoxItem)?.Tag as string ?? "ms";
+        // Translate canonical tag → parser DSL suffix.
+        return unit switch
+        {
+            "ms"       => value + "ms",
+            "sec"      => value + "s",
+            "min"      => value + "min",
+            "per_sec"  => value + "/s",
+            "per_min"  => value + "/min",
+            "per_hour" => value + "/h",
+            _          => value + "ms",
+        };
+    }
+
+    private void UpdateRateHint()
+    {
+        if (!_rateUiReady || RateHintLabel == null) return;
+
+        if (string.IsNullOrWhiteSpace(ClickRateValueBox.Text))
+        {
+            RateHintLabel.Text = string.Empty;
+            return;
+        }
+
+        if (!ClickRateParser.TryParse(ComposeRateString(), out var delay, out _))
+        {
+            RateHintLabel.Foreground = (Brush)FindResource("TextSecondaryBrush");
+            RateHintLabel.Text = string.Empty;
+            return;
+        }
+
+        bool isDelayMode = ModeDelay.IsChecked == true;
+        double cps = 1000.0 / delay.TotalMilliseconds;
+        bool veryFast = cps > 100.0;
+
+        string conversion = isDelayMode ? FormatRate(cps) : FormatDelay(delay);
+
+        if (veryFast)
+        {
+            RateHintLabel.Foreground = (Brush)FindResource("DangerBrush");
+            RateHintLabel.Text = $"⚠ Very fast — input may not register reliably  (≈ {conversion})";
+        }
+        else
+        {
+            RateHintLabel.Foreground = (Brush)FindResource("TextSecondaryBrush");
+            RateHintLabel.Text = $"≈ {conversion}";
+        }
+    }
+
+    private static string FormatRate(double cps)
+    {
+        if (cps >= 1.0)
+            return $"{Trim(cps)} clicks/sec";
+        double cpm = cps * 60.0;
+        if (cpm >= 1.0)
+            return $"{Trim(cpm)} clicks/min";
+        double cph = cps * 3600.0;
+        return $"{Trim(cph)} clicks/hour";
+    }
+
+    private static string FormatDelay(TimeSpan delay)
+    {
+        double ms = delay.TotalMilliseconds;
+        if (ms < 1000)         return $"{Trim(ms)} ms between clicks";
+        if (ms < 60_000)       return $"{Trim(ms / 1000.0)} sec between clicks";
+        if (ms < 3_600_000)    return $"{Trim(ms / 60_000.0)} min between clicks";
+        return $"{Trim(ms / 3_600_000.0)} hours between clicks";
+    }
+
+    private static string Trim(double v)
+    {
+        // Show integers without ".0", otherwise up to 2 decimals.
+        if (Math.Abs(v - Math.Round(v)) < 0.005)
+            return ((long)Math.Round(v)).ToString(System.Globalization.CultureInfo.InvariantCulture);
+        return v.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+    }
+
     // ── UI helpers ────────────────────────────────────────────────────────────
 
     private void SetButtonState(bool isClicking)
@@ -396,10 +526,21 @@ public partial class MainWindow : Window
     private void LoadSettings()
     {
         var s = Settings;
-        ClickRateValueBox.Text = s.ClickRateValue;
 
-        foreach (ComboBoxItem item in ClickRateUnitBox.Items)
-            if ((string)item.Tag == s.ClickRateUnit) item.IsSelected = true;
+        // Mode + units must be set BEFORE wiring rate hint, to avoid handler thrash.
+        if (s.ClickRateMode == ClickRateMode.Frequency)
+        {
+            ModeFrequency.IsChecked = true;
+            PopulateUnitBox(FrequencyUnits, s.ClickRateUnit, fallbackTag: "per_sec");
+        }
+        else
+        {
+            ModeDelay.IsChecked = true;
+            PopulateUnitBox(DelayUnits, s.ClickRateUnit, fallbackTag: "ms");
+        }
+        ClickRateValueBox.Text = s.ClickRateValue;
+        _rateUiReady = true;
+        UpdateRateHint();
 
         BtnLeft.IsChecked   = s.Button == QcMouseButton.Left;
         BtnRight.IsChecked  = s.Button == QcMouseButton.Right;
@@ -429,8 +570,10 @@ public partial class MainWindow : Window
     private void SaveSettings()
     {
         var s = Settings;
+        s.ClickRateMode  = ModeFrequency.IsChecked == true ? ClickRateMode.Frequency : ClickRateMode.Delay;
         s.ClickRateValue = ClickRateValueBox.Text;
-        s.ClickRateUnit  = (ClickRateUnitBox.SelectedItem as ComboBoxItem)?.Tag as string ?? "ms";
+        s.ClickRateUnit  = (ClickRateUnitBox.SelectedItem as ComboBoxItem)?.Tag as string
+                           ?? (s.ClickRateMode == ClickRateMode.Frequency ? "per_sec" : "ms");
 
         s.Button     = BtnRight.IsChecked == true ? QcMouseButton.Right
                      : BtnMiddle.IsChecked == true ? QcMouseButton.Middle

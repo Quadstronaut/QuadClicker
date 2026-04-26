@@ -183,7 +183,7 @@ internal static class CliEntryPoint
         When run without arguments, launches the GUI.
 
         Options:
-          --rate <value>               Click rate. Formats: 100ms | 10/s | 600/min  [required in CLI mode]
+          --rate <value>               Click rate. Formats: 100ms | 5s | 2min | 10/s | 600/min | 60/h  [required in CLI mode]
           --button <left|right|middle> Mouse button to click (default: left)
           --type <single|double>       Click type (default: single)
           --location <x,y>             Fixed screen coordinate (default: current cursor)
@@ -206,5 +206,7 @@ internal static class CliEntryPoint
           quadclicker --rate 10/s --location 500,300 --button right --stop-after-clicks 100
           quadclicker --rate 500ms --type double --stop-after-seconds 30
           quadclicker --rate 1ms --button middle --stop-after-clicks 50
+          quadclicker --rate 5s --stop-after-clicks 10
+          quadclicker --rate 60/h --stop-after-seconds 3600
         """);
 }
