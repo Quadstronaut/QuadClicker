@@ -40,6 +40,12 @@ internal static partial class NativeMethods
     [LibraryImport("user32.dll", SetLastError = true)]
     internal static partial IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
 
+    // EntryPoint is required: kernel32 only exports GetModuleHandleA/W, and
+    // [LibraryImport] does not auto-append the W suffix the way [DllImport]
+    // with CharSet=Auto did.
+    [LibraryImport("kernel32.dll", EntryPoint = "GetModuleHandleW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+    internal static partial IntPtr GetModuleHandle(string? lpModuleName);
+
     // ── Hotkeys ───────────────────────────────────────────────────────────────
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
