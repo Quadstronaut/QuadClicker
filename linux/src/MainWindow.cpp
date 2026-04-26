@@ -16,6 +16,22 @@
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
 
+// X11/Xlib.h defines preprocessor macros for event-mask bits that collide
+// with QEvent::Type enumerators of the same name. Undefine them so we can
+// keep using Qt's enums in the rest of this file.
+#ifdef KeyPress
+#  undef KeyPress
+#endif
+#ifdef KeyRelease
+#  undef KeyRelease
+#endif
+#ifdef FocusIn
+#  undef FocusIn
+#endif
+#ifdef FocusOut
+#  undef FocusOut
+#endif
+
 namespace QuadClicker {
 
 // ── Colour constants (Taneth palette — deep-green hull, gold HUD accent) ──────

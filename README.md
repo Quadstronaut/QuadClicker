@@ -101,16 +101,20 @@ xcodebuild test -project macos/QuadClicker.xcodeproj \
 
 **Requirements:** Qt 6.2+, CMake 3.20+, GCC 11+ or Clang 13+, libXtst, libXss, libX11
 
+**Verified:** Ubuntu 24.04 LTS (Qt 6.4.2, GCC 13.3) — including under WSL2 with WSLg.
+
 ```bash
 # Install dependencies (Ubuntu/Debian)
-sudo apt install qt6-base-dev libxt-dev libxtst-dev libxss-dev cmake build-essential
+sudo apt install build-essential cmake ninja-build pkg-config \
+                 qt6-base-dev qt6-base-dev-tools qt6-tools-dev \
+                 libqt6svg6-dev libxtst-dev libxss-dev
 
 # Configure and build
-cmake -B build -DCMAKE_BUILD_TYPE=Release linux/
-cmake --build build --parallel
+cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release linux/
+cmake --build build
 
 # Run tests
-cd build && ctest --output-on-failure
+ctest --test-dir build --output-on-failure
 
 # Install
 sudo cmake --install build
@@ -211,11 +215,12 @@ Settings are persisted automatically on exit and loaded on launch. JSON format i
 | 0 | Monorepo restructure + CI/CD skeleton | ✅ Done |
 | 1 | Windows WPF — released **v0.1.0** as a self-contained single-file EXE | ✅ Done |
 | 2 | macOS SwiftUI — code-complete, **unverified** (never compiled or run; `build-macos.yml` is a no-op placeholder) | 🔨 Pending Mac + Xcode |
-| 3 | Linux Qt6/C++ — code-complete, **unverified** (never compiled or run; `build-linux.yml` is a no-op placeholder) | 🔨 Pending Linux + Qt6 |
+| 3 | Linux Qt6/C++ — **build verified** on Ubuntu 24.04 (Qt 6.4.2) under WSL2/WSLg: clean compile, all unit tests pass, CLI happy + parse-error paths exercised, GUI launches and renders. CI (`build-linux.yml`) now runs the real build. No `.deb` / AppImage published yet. | ✅ Built + tested |
 
 ### Known limitations
 
-- The mode-based **Click Rate** redesign (Delay vs Frequency radio, live conversion hint, >100/s warning) and the **Taneth** color palette are **Windows-only** at this time. The macOS and Linux source still uses the original single-row click-rate input and the emerald-green palette; both are scheduled to be brought to parity once their builds are verified.
+- The mode-based **Click Rate** redesign and the **Taneth** palette are now in all three platforms' source. Linux is verified end-to-end; macOS source has them but remains unbuilt pending an Xcode-equipped machine.
+- Linux global hotkeys: `XGrabKey` (X11) is used; Wayland support is limited to compositors that expose `org.kde.kglobalaccel` (KDE) — GNOME Wayland users will not get global hotkeys until a compositor-side API exists.
 
 ---
 
@@ -229,7 +234,7 @@ Latest builds are published on GitHub Releases:
 |---|---|---|
 | Windows x64 | `QuadClicker-win-x64.zip` | Self-contained single-file EXE — **no .NET install required**. Unzip and run. |
 | macOS | Not yet released | Phase 2 build is unverified; no signed/notarized artifact yet. |
-| Linux | Not yet released | Phase 3 build is unverified; no `.deb` / `.rpm` / AppImage yet. |
+| Linux | Not yet released | Build verified on Ubuntu 24.04 (Qt 6.4.2). No signed `.deb` / `.rpm` / AppImage published yet — packaging is the next step. |
 
 The Windows binary is currently **unsigned** — Windows SmartScreen will warn on first launch until an Authenticode certificate is in place (see `CODE_SIGNING.md`).
 
