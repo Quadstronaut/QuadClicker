@@ -5,6 +5,7 @@
 #include "core/TrayManager.h"
 #include "core/HotkeyManager.h"
 #include "models/AppSettings.h"
+#include "models/ClickRateMode.h"
 
 #include <QMainWindow>
 #include <QLineEdit>
@@ -59,6 +60,14 @@ private:
 
     // ── Hotkey capture ────────────────────────────────────────────────────────
     void installHotkeyCaptureFilter(QLineEdit* edit);
+    void onClickRateModeChanged();
+    void onClickRateInputChanged();
+    void populateUnitBox(const QString& desiredTag, const QString& fallbackTag);
+    QString composeRateString() const;
+    void updateRateHint();
+    static QString formatRate(double cps);
+    static QString formatDelay(double ms);
+    static QString trimNumber(double v);
     bool hotkeyEditKeyPress(QLineEdit* edit, QKeyEvent* ev);
     static QString buildHotkeyText(Qt::Key key, Qt::KeyboardModifiers mods);
     bool tryParseHotkeyText(const QString& text, unsigned int& modifiers,
@@ -84,6 +93,11 @@ private:
     // ── Widgets ───────────────────────────────────────────────────────────────
     QLineEdit*    m_clickRateValueEdit{nullptr};
     QComboBox*    m_clickRateUnitBox{nullptr};
+    QButtonGroup* m_rateModeGroup{nullptr};
+    QRadioButton* m_modeDelay{nullptr};
+    QRadioButton* m_modeFrequency{nullptr};
+    QLabel*       m_rateHintLabel{nullptr};
+    bool          m_rateUiReady{false};
 
     QButtonGroup* m_buttonGroup{nullptr};
     QRadioButton* m_btnLeft{nullptr};

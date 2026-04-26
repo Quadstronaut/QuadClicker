@@ -24,6 +24,7 @@
 		AA000021 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100021 /* AppSettings.swift */; };
 		AA000022 /* MouseButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100022 /* MouseButton.swift */; };
 		AA000023 /* ClickType.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100023 /* ClickType.swift */; };
+		AA000024 /* ClickRateMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100024 /* ClickRateMode.swift */; };
 		/* CLI */
 		AA000030 /* CliEntryPoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100030 /* CliEntryPoint.swift */; };
 		/* Resources */
@@ -49,6 +50,7 @@
 		AA100021 /* AppSettings.swift */       = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
 		AA100022 /* MouseButton.swift */       = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseButton.swift; sourceTree = "<group>"; };
 		AA100023 /* ClickType.swift */         = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClickType.swift; sourceTree = "<group>"; };
+		AA100024 /* ClickRateMode.swift */     = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClickRateMode.swift; sourceTree = "<group>"; };
 		AA100030 /* CliEntryPoint.swift */     = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CliEntryPoint.swift; sourceTree = "<group>"; };
 		AA100040 /* Info.plist */              = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AA100041 /* QuadClicker.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = QuadClicker.entitlements; sourceTree = "<group>"; };
@@ -122,6 +124,7 @@
 				AA100021 /* AppSettings.swift */,
 				AA100022 /* MouseButton.swift */,
 				AA100023 /* ClickType.swift */,
+				AA100024 /* ClickRateMode.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -268,6 +271,7 @@
 				AA000021 /* AppSettings.swift in Sources */,
 				AA000022 /* MouseButton.swift in Sources */,
 				AA000023 /* ClickType.swift in Sources */,
+				AA000024 /* ClickRateMode.swift in Sources */,
 				AA000030 /* CliEntryPoint.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

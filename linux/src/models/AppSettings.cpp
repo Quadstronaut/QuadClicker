@@ -68,6 +68,10 @@ AppSettings AppSettings::load()
             s.clickRateValue = obj[QLatin1String("ClickRateValue")].toString(s.clickRateValue);
         if (obj.contains(QLatin1String("ClickRateUnit")))
             s.clickRateUnit = obj[QLatin1String("ClickRateUnit")].toString(s.clickRateUnit);
+        if (obj.contains(QLatin1String("ClickRateMode"))) {
+            int v = obj[QLatin1String("ClickRateMode")].toInt(0);
+            s.clickRateMode = (v == 1) ? ClickRateMode::Frequency : ClickRateMode::Delay;
+        }
         if (obj.contains(QLatin1String("Button")))
             s.button = mouseButtonFromString(obj[QLatin1String("Button")].toString());
         if (obj.contains(QLatin1String("ClickType")))
@@ -93,6 +97,18 @@ AppSettings AppSettings::load()
     } catch (...) {
         // Corrupt or unreadable — fall back to defaults
     }
+
+    // Legacy migration: pre-redesign settings used "/s" and "/min" as unit values
+    // with no ClickRateMode field. Translate them to the new canonical shape.
+    if (s.clickRateUnit == QLatin1String("/s")) {
+        s.clickRateMode = ClickRateMode::Frequency;
+        s.clickRateUnit = QStringLiteral("per_sec");
+    } else if (s.clickRateUnit == QLatin1String("/min")) {
+        s.clickRateMode = ClickRateMode::Frequency;
+        s.clickRateUnit = QStringLiteral("per_min");
+    } else if (s.clickRateUnit == QLatin1String("ms")) {
+        s.clickRateMode = ClickRateMode::Delay;
+    }
     return s;
 }
 
@@ -104,6 +120,7 @@ void AppSettings::save() const
         if (!dir.exists()) dir.mkpath(dir.absolutePath());
 
         QJsonObject obj;
+        obj[QLatin1String("ClickRateMode")]      = static_cast<int>(clickRateMode);
         obj[QLatin1String("ClickRateValue")]     = clickRateValue;
         obj[QLatin1String("ClickRateUnit")]      = clickRateUnit;
         obj[QLatin1String("Button")]             = mouseButtonToString(button);

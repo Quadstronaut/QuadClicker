@@ -11,54 +11,56 @@
 #include <QMetaObject>
 #include <QTimer>
 
+#include <cmath>
+
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
 
 namespace QuadClicker {
 
-// ── Colour constants (matches design system) ──────────────────────────────────
+// ── Colour constants (Taneth palette — deep-green hull, gold HUD accent) ──────
 static const char* CSS_WINDOW = R"(
 QMainWindow, QWidget#centralWidget {
-    background-color: #1A1A1A;
+    background-color: #0A1410;
 }
 QLabel {
-    color: #F0F0F0;
+    color: #E8DCB0;
     font-size: 13px;
 }
 QLineEdit {
-    background-color: #242424;
-    color: #F0F0F0;
-    border: 1px solid #3A3A3A;
+    background-color: #13211C;
+    color: #E8DCB0;
+    border: 1px solid #2D5448;
     border-radius: 3px;
     padding: 3px 6px;
     font-size: 13px;
 }
 QLineEdit:focus {
-    border-color: #50C878;
+    border-color: #E8B547;
 }
 QLineEdit:disabled {
-    color: #555555;
-    background-color: #1E1E1E;
+    color: #3D5048;
+    background-color: #0A1410;
 }
 QComboBox {
-    background-color: #242424;
-    color: #F0F0F0;
-    border: 1px solid #3A3A3A;
+    background-color: #13211C;
+    color: #E8DCB0;
+    border: 1px solid #2D5448;
     border-radius: 3px;
     padding: 3px 6px;
     font-size: 13px;
 }
 QComboBox:focus {
-    border-color: #50C878;
+    border-color: #E8B547;
 }
 QComboBox QAbstractItemView {
-    background-color: #242424;
-    color: #F0F0F0;
-    selection-background-color: #50C878;
-    selection-color: #1A1A1A;
+    background-color: #13211C;
+    color: #E8DCB0;
+    selection-background-color: #E8B547;
+    selection-color: #0A1410;
 }
 QRadioButton {
-    color: #F0F0F0;
+    color: #E8DCB0;
     font-size: 13px;
     spacing: 6px;
 }
@@ -67,17 +69,17 @@ QRadioButton::indicator {
     height: 14px;
 }
 QRadioButton::indicator:checked {
-    background-color: #50C878;
-    border: 2px solid #50C878;
+    background-color: #E8B547;
+    border: 2px solid #E8B547;
     border-radius: 7px;
 }
 QRadioButton::indicator:unchecked {
-    background-color: #242424;
-    border: 2px solid #3A3A3A;
+    background-color: #13211C;
+    border: 2px solid #2D5448;
     border-radius: 7px;
 }
 QCheckBox {
-    color: #F0F0F0;
+    color: #E8DCB0;
     font-size: 13px;
     spacing: 6px;
 }
@@ -86,32 +88,33 @@ QCheckBox::indicator {
     height: 14px;
 }
 QCheckBox::indicator:checked {
-    background-color: #50C878;
-    border: 2px solid #50C878;
+    background-color: #E8B547;
+    border: 2px solid #E8B547;
     border-radius: 2px;
 }
 QCheckBox::indicator:unchecked {
-    background-color: #242424;
-    border: 2px solid #3A3A3A;
+    background-color: #13211C;
+    border: 2px solid #2D5448;
     border-radius: 2px;
 }
 QPushButton#smallBtn {
-    background-color: #2E2E2E;
-    color: #F0F0F0;
-    border: 1px solid #3A3A3A;
+    background-color: #1B2E27;
+    color: #E8DCB0;
+    border: 1px solid #2D5448;
     border-radius: 3px;
     padding: 3px 8px;
     font-size: 12px;
 }
 QPushButton#smallBtn:hover {
-    background-color: #3A3A3A;
+    background-color: #13211C;
+    border-color: #E8B547;
 }
 QPushButton#smallBtn:pressed {
-    background-color: #2A2A2A;
+    background-color: #0A1410;
 }
 QPushButton#startBtn {
-    background-color: #50C878;
-    color: #1A1A1A;
+    background-color: #E8B547;
+    color: #0A1410;
     border: none;
     border-radius: 4px;
     font-size: 14px;
@@ -119,14 +122,14 @@ QPushButton#startBtn {
     padding: 8px;
 }
 QPushButton#startBtn:hover {
-    background-color: #3DAF62;
+    background-color: #F5C75A;
 }
 QPushButton#startBtn:pressed {
-    background-color: #2E9150;
+    background-color: #B88A2A;
 }
 QPushButton#stopBtn {
-    background-color: #E05252;
-    color: #F0F0F0;
+    background-color: #E04030;
+    color: #FFFFFF;
     border: none;
     border-radius: 4px;
     font-size: 14px;
@@ -134,10 +137,10 @@ QPushButton#stopBtn {
     padding: 8px;
 }
 QPushButton#stopBtn:hover {
-    background-color: #C43C3C;
+    background-color: #C8331E;
 }
 QPushButton#stopBtn:pressed {
-    background-color: #A03030;
+    background-color: #A8281A;
 }
 )";
 
@@ -152,7 +155,7 @@ MainWindow::MainWindow(QWidget* parent)
     , m_settings(AppSettings::load())
 {
     setWindowTitle(QStringLiteral("QuadClicker"));
-    setFixedSize(420, 480);
+    setFixedSize(420, 510);
     setStyleSheet(QString::fromUtf8(CSS_WINDOW));
 
     buildUi();
@@ -238,7 +241,7 @@ void MainWindow::buildUi()
 
     // ── Error label ────────────────────────────────────────────────────────
     m_errorLabel = new QLabel(this);
-    m_errorLabel->setStyleSheet(QStringLiteral("color: #E05252; font-size: 12px;"));
+    m_errorLabel->setStyleSheet(QStringLiteral("color: #E04030; font-size: 12px;"));
     m_errorLabel->setWordWrap(true);
     m_errorLabel->setVisible(false);
     root->addWidget(m_errorLabel);
@@ -253,17 +256,17 @@ void MainWindow::buildUi()
         m_statusDot = new QLabel(this);
         m_statusDot->setFixedSize(8, 8);
         m_statusDot->setStyleSheet(
-            QStringLiteral("background-color: #555555; border-radius: 4px;"));
+            QStringLiteral("background-color: #3D5048; border-radius: 4px;"));
         hl->addWidget(m_statusDot, 0, Qt::AlignVCenter);
 
         m_statusLabel = new QLabel(QStringLiteral("Stopped"), this);
         m_statusLabel->setStyleSheet(
-            QStringLiteral("color: #9A9A9A; font-size: 12px;"));
+            QStringLiteral("color: #7A9088; font-size: 12px;"));
         hl->addWidget(m_statusLabel, 0, Qt::AlignVCenter);
 
         m_clickCountLabel = new QLabel(this);
         m_clickCountLabel->setStyleSheet(
-            QStringLiteral("color: #9A9A9A; font-size: 12px;"));
+            QStringLiteral("color: #7A9088; font-size: 12px;"));
         m_clickCountLabel->setVisible(false);
         hl->addSpacing(10);
         hl->addWidget(m_clickCountLabel, 0, Qt::AlignVCenter);
@@ -286,7 +289,7 @@ void MainWindow::buildUi()
     if (!m_hotkeys->isSupported()) {
         QLabel* note = new QLabel(HotkeyManager::unsupportedNote(), this);
         note->setStyleSheet(
-            QStringLiteral("color: #9A9A9A; font-size: 11px;"));
+            QStringLiteral("color: #7A9088; font-size: 11px;"));
         note->setWordWrap(true);
         root->addWidget(note);
     }
@@ -294,33 +297,73 @@ void MainWindow::buildUi()
 
 QWidget* MainWindow::buildClickRateRow()
 {
-    QWidget* row = new QWidget(this);
-    QHBoxLayout* hl = new QHBoxLayout(row);
-    hl->setContentsMargins(0, 0, 0, 0);
-    hl->setSpacing(0);
+    auto* host = new QWidget(this);
+    auto* root = new QHBoxLayout(host);
+    root->setContentsMargins(0, 0, 0, 0);
+    root->setSpacing(0);
 
-    QLabel* lbl = new QLabel(QStringLiteral("Click Rate:"), this);
+    auto* lbl = new QLabel(QStringLiteral("Click Rate:"), host);
     lbl->setFixedWidth(155);
-    hl->addWidget(lbl);
+    lbl->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+    root->addWidget(lbl);
 
-    m_clickRateValueEdit = new QLineEdit(QStringLiteral("100"), this);
+    auto* col = new QVBoxLayout();
+    col->setContentsMargins(0, 0, 0, 0);
+    col->setSpacing(2);
+
+    // Mode radios
+    auto* modeRow = new QHBoxLayout();
+    modeRow->setSpacing(16);
+    modeRow->setContentsMargins(0, 0, 0, 0);
+    m_modeDelay     = new QRadioButton(QStringLiteral("Delay"), host);
+    m_modeFrequency = new QRadioButton(QStringLiteral("Frequency"), host);
+    m_rateModeGroup = new QButtonGroup(host);
+    m_rateModeGroup->addButton(m_modeDelay,     0);
+    m_rateModeGroup->addButton(m_modeFrequency, 1);
+    m_modeDelay->setChecked(true);
+    modeRow->addWidget(m_modeDelay);
+    modeRow->addWidget(m_modeFrequency);
+    modeRow->addStretch();
+    col->addLayout(modeRow);
+
+    // Value + Unit
+    auto* valRow = new QHBoxLayout();
+    valRow->setSpacing(6);
+    valRow->setContentsMargins(0, 0, 0, 0);
+    m_clickRateValueEdit = new QLineEdit(QStringLiteral("100"), host);
     m_clickRateValueEdit->setFixedWidth(80);
     m_clickRateValueEdit->setToolTip(
-        QStringLiteral("Enter a number. Unit selected to the right."));
-    hl->addWidget(m_clickRateValueEdit);
+        QStringLiteral("Enter a number. Unit selected on the right."));
+    valRow->addWidget(m_clickRateValueEdit);
 
-    hl->addSpacing(6);
-
-    m_clickRateUnitBox = new QComboBox(this);
-    m_clickRateUnitBox->setFixedWidth(80);
-    m_clickRateUnitBox->addItem(QStringLiteral("ms"),   QStringLiteral("ms"));
-    m_clickRateUnitBox->addItem(QStringLiteral("/s"),   QStringLiteral("/s"));
-    m_clickRateUnitBox->addItem(QStringLiteral("/min"), QStringLiteral("/min"));
+    m_clickRateUnitBox = new QComboBox(host);
+    m_clickRateUnitBox->setFixedWidth(110);
     m_clickRateUnitBox->setToolTip(QStringLiteral("Unit for the click rate value"));
-    hl->addWidget(m_clickRateUnitBox);
+    valRow->addWidget(m_clickRateUnitBox);
+    valRow->addStretch();
+    col->addLayout(valRow);
 
-    hl->addStretch();
-    return row;
+    // Hint
+    m_rateHintLabel = new QLabel(QString(), host);
+    m_rateHintLabel->setStyleSheet(QStringLiteral("color: #7A9088; font-size: 11px;"));
+    m_rateHintLabel->setWordWrap(true);
+    col->addWidget(m_rateHintLabel);
+
+    root->addLayout(col, /*stretch=*/1);
+
+    // Wiring (deferred — populateUnitBox + signal hookups happen in loadSettings)
+    connect(m_modeDelay,     &QRadioButton::toggled, this, [this](bool on) {
+        if (on) onClickRateModeChanged();
+    });
+    connect(m_modeFrequency, &QRadioButton::toggled, this, [this](bool on) {
+        if (on) onClickRateModeChanged();
+    });
+    connect(m_clickRateValueEdit, &QLineEdit::textChanged,
+            this, &MainWindow::onClickRateInputChanged);
+    connect(m_clickRateUnitBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](int){ onClickRateInputChanged(); });
+
+    return host;
 }
 
 QWidget* MainWindow::buildMouseButtonRow()
@@ -456,17 +499,17 @@ QWidget* MainWindow::buildSectionSeparator(const QString& label)
     QFrame* line1 = new QFrame(this);
     line1->setFrameShape(QFrame::HLine);
     line1->setFixedWidth(8);
-    line1->setStyleSheet(QStringLiteral("color: #3A3A3A;"));
+    line1->setStyleSheet(QStringLiteral("color: #2D5448;"));
     hl->addWidget(line1, 0, Qt::AlignVCenter);
 
     QLabel* lbl = new QLabel(label, this);
     lbl->setStyleSheet(
-        QStringLiteral("color: #9A9A9A; font-size: 11px; background: transparent;"));
+        QStringLiteral("color: #7A9088; font-size: 11px; background: transparent;"));
     hl->addWidget(lbl, 0, Qt::AlignVCenter);
 
     QFrame* line2 = new QFrame(this);
     line2->setFrameShape(QFrame::HLine);
-    line2->setStyleSheet(QStringLiteral("color: #3A3A3A;"));
+    line2->setStyleSheet(QStringLiteral("color: #2D5448;"));
     hl->addWidget(line2, 1, Qt::AlignVCenter);
 
     return row;
@@ -551,7 +594,7 @@ QWidget* MainWindow::buildHotkeysRow()
     hl->addWidget(lbl);
 
     QLabel* startLbl = new QLabel(QStringLiteral("Start:"), this);
-    startLbl->setStyleSheet(QStringLiteral("color: #9A9A9A; font-size: 12px;"));
+    startLbl->setStyleSheet(QStringLiteral("color: #7A9088; font-size: 12px;"));
     hl->addWidget(startLbl);
 
     m_startHotkeyEdit = new QLineEdit(this);
@@ -565,7 +608,7 @@ QWidget* MainWindow::buildHotkeysRow()
     hl->addSpacing(10);
 
     QLabel* stopLbl = new QLabel(QStringLiteral("Stop:"), this);
-    stopLbl->setStyleSheet(QStringLiteral("color: #9A9A9A; font-size: 12px;"));
+    stopLbl->setStyleSheet(QStringLiteral("color: #7A9088; font-size: 12px;"));
     hl->addWidget(stopLbl);
 
     m_stopHotkeyEdit = new QLineEdit(QStringLiteral("F10"), this);
@@ -596,8 +639,8 @@ protected:
         }
         if (watched == m_edit && event->type() == QEvent::FocusIn) {
             m_edit->setStyleSheet(
-                QStringLiteral("QLineEdit { border: 1px solid #50C878; "
-                                "background-color: #242424; color: #F0F0F0; "
+                QStringLiteral("QLineEdit { border: 1px solid #E8B547; "
+                                "background-color: #13211C; color: #E8DCB0; "
                                 "border-radius: 3px; padding: 3px 6px; }"));
         }
         if (watched == m_edit && event->type() == QEvent::FocusOut) {
@@ -833,14 +876,8 @@ void MainWindow::restoreFromTray()
 bool MainWindow::tryBuildSession(ClickSession& session, QString& error) const
 {
     // Click rate
-    QString rateText = m_clickRateValueEdit->text().trimmed();
-    QString unit = m_clickRateUnitBox->currentData().toString();
-    QString combined = (unit == QLatin1String("ms"))
-                       ? rateText + QLatin1String("ms")
-                       : rateText + unit;
-
     std::chrono::milliseconds delay;
-    if (!ClickRateParser::tryParse(combined, delay, error)) return false;
+    if (!ClickRateParser::tryParse(composeRateString(), delay, error)) return false;
 
     // Stop after clicks
     bool ok = false;
@@ -929,24 +966,24 @@ void MainWindow::setStatus(EngineStatus status)
     switch (status) {
     case EngineStatus::Clicking:
         m_statusDot->setStyleSheet(
-            QStringLiteral("background-color: #50C878; border-radius: 4px;"));
+            QStringLiteral("background-color: #E8B547; border-radius: 4px;"));
         m_statusLabel->setText(QStringLiteral("Clicking"));
         m_statusLabel->setStyleSheet(
-            QStringLiteral("color: #50C878; font-size: 12px;"));
+            QStringLiteral("color: #E8B547; font-size: 12px;"));
         break;
     case EngineStatus::WaitingForIdle:
         m_statusDot->setStyleSheet(
-            QStringLiteral("background-color: #E0A030; border-radius: 4px;"));
+            QStringLiteral("background-color: #5BA89A; border-radius: 4px;"));
         m_statusLabel->setText(QStringLiteral("Waiting for idle\u2026"));
         m_statusLabel->setStyleSheet(
-            QStringLiteral("color: #E0A030; font-size: 12px;"));
+            QStringLiteral("color: #5BA89A; font-size: 12px;"));
         break;
     default:
         m_statusDot->setStyleSheet(
-            QStringLiteral("background-color: #555555; border-radius: 4px;"));
+            QStringLiteral("background-color: #3D5048; border-radius: 4px;"));
         m_statusLabel->setText(QStringLiteral("Stopped"));
         m_statusLabel->setStyleSheet(
-            QStringLiteral("color: #9A9A9A; font-size: 12px;"));
+            QStringLiteral("color: #7A9088; font-size: 12px;"));
         break;
     }
 }
@@ -969,10 +1006,17 @@ void MainWindow::loadSettings()
 {
     const AppSettings& s = m_settings;
 
+    m_rateUiReady = false;
+    if (s.clickRateMode == ClickRateMode::Frequency) {
+        m_modeFrequency->setChecked(true);
+        populateUnitBox(s.clickRateUnit, QStringLiteral("per_sec"));
+    } else {
+        m_modeDelay->setChecked(true);
+        populateUnitBox(s.clickRateUnit, QStringLiteral("ms"));
+    }
     m_clickRateValueEdit->setText(s.clickRateValue);
-
-    int unitIdx = m_clickRateUnitBox->findData(s.clickRateUnit);
-    if (unitIdx >= 0) m_clickRateUnitBox->setCurrentIndex(unitIdx);
+    m_rateUiReady = true;
+    updateRateHint();
 
     m_btnLeft->setChecked(s.button   == MouseButton::Left);
     m_btnRight->setChecked(s.button  == MouseButton::Right);
@@ -1009,6 +1053,9 @@ void MainWindow::saveSettings()
 {
     AppSettings& s = m_settings;
 
+    s.clickRateMode  = m_modeFrequency->isChecked()
+                         ? ClickRateMode::Frequency
+                         : ClickRateMode::Delay;
     s.clickRateValue = m_clickRateValueEdit->text();
     s.clickRateUnit  = m_clickRateUnitBox->currentData().toString();
 
@@ -1032,6 +1079,127 @@ void MainWindow::saveSettings()
     s.stopHotkeyText   = m_stopHotkeyEdit->text();
 
     s.save();
+}
+
+// ── Click Rate row helpers ────────────────────────────────────────────────────
+
+void MainWindow::onClickRateModeChanged()
+{
+    if (!m_modeFrequency || !m_modeDelay) return;
+    bool isFreq = m_modeFrequency->isChecked();
+    QString prevTag = m_clickRateUnitBox->currentData().toString();
+    QString fallback = isFreq ? QStringLiteral("per_sec") : QStringLiteral("ms");
+    populateUnitBox(prevTag, fallback);
+    if (m_rateUiReady) updateRateHint();
+}
+
+void MainWindow::onClickRateInputChanged()
+{
+    if (m_rateUiReady) updateRateHint();
+}
+
+void MainWindow::populateUnitBox(const QString& desiredTag, const QString& fallbackTag)
+{
+    bool wasReady = m_rateUiReady;
+    m_rateUiReady = false;          // suppress hint rebuild during repopulation
+
+    m_clickRateUnitBox->clear();
+    bool isFreq = m_modeFrequency && m_modeFrequency->isChecked();
+    if (isFreq) {
+        m_clickRateUnitBox->addItem(QStringLiteral("per second"), QStringLiteral("per_sec"));
+        m_clickRateUnitBox->addItem(QStringLiteral("per minute"), QStringLiteral("per_min"));
+        m_clickRateUnitBox->addItem(QStringLiteral("per hour"),   QStringLiteral("per_hour"));
+    } else {
+        m_clickRateUnitBox->addItem(QStringLiteral("ms"),       QStringLiteral("ms"));
+        m_clickRateUnitBox->addItem(QStringLiteral("seconds"),  QStringLiteral("sec"));
+        m_clickRateUnitBox->addItem(QStringLiteral("minutes"),  QStringLiteral("min"));
+    }
+    int idx = m_clickRateUnitBox->findData(desiredTag);
+    if (idx < 0) idx = m_clickRateUnitBox->findData(fallbackTag);
+    if (idx < 0) idx = 0;
+    m_clickRateUnitBox->setCurrentIndex(idx);
+
+    m_rateUiReady = wasReady;
+}
+
+QString MainWindow::composeRateString() const
+{
+    QString v = m_clickRateValueEdit->text().trimmed();
+    QString u = m_clickRateUnitBox->currentData().toString();
+    if (u == QLatin1String("ms"))       return v + QLatin1String("ms");
+    if (u == QLatin1String("sec"))      return v + QLatin1String("s");
+    if (u == QLatin1String("min"))      return v + QLatin1String("min");
+    if (u == QLatin1String("per_sec"))  return v + QLatin1String("/s");
+    if (u == QLatin1String("per_min"))  return v + QLatin1String("/min");
+    if (u == QLatin1String("per_hour")) return v + QLatin1String("/h");
+    return v + QLatin1String("ms");
+}
+
+void MainWindow::updateRateHint()
+{
+    if (!m_rateHintLabel) return;
+
+    QString v = m_clickRateValueEdit->text().trimmed();
+    if (v.isEmpty()) {
+        m_rateHintLabel->setText(QString());
+        m_rateHintLabel->setStyleSheet(
+            QStringLiteral("color: #7A9088; font-size: 11px;"));
+        return;
+    }
+
+    std::chrono::milliseconds delay{};
+    QString err;
+    if (!ClickRateParser::tryParse(composeRateString(), delay, err)) {
+        m_rateHintLabel->setText(QString());
+        m_rateHintLabel->setStyleSheet(
+            QStringLiteral("color: #7A9088; font-size: 11px;"));
+        return;
+    }
+
+    double ms = static_cast<double>(delay.count());
+    double cps = 1000.0 / ms;
+    bool isDelay = m_modeDelay && m_modeDelay->isChecked();
+    bool veryFast = cps > 100.0;
+    QString conv = isDelay ? formatRate(cps) : formatDelay(ms);
+
+    if (veryFast) {
+        m_rateHintLabel->setText(
+            QStringLiteral("⚠ Very fast — input may not register reliably  (≈ %1)")
+                .arg(conv));
+        m_rateHintLabel->setStyleSheet(
+            QStringLiteral("color: #E04030; font-size: 11px;"));
+    } else {
+        m_rateHintLabel->setText(QStringLiteral("≈ %1").arg(conv));
+        m_rateHintLabel->setStyleSheet(
+            QStringLiteral("color: #7A9088; font-size: 11px;"));
+    }
+}
+
+QString MainWindow::formatRate(double cps)
+{
+    if (cps >= 1.0) return QStringLiteral("%1 clicks/sec").arg(trimNumber(cps));
+    double cpm = cps * 60.0;
+    if (cpm >= 1.0) return QStringLiteral("%1 clicks/min").arg(trimNumber(cpm));
+    return QStringLiteral("%1 clicks/hour").arg(trimNumber(cps * 3600.0));
+}
+
+QString MainWindow::formatDelay(double ms)
+{
+    if (ms < 1000.0)      return QStringLiteral("%1 ms between clicks").arg(trimNumber(ms));
+    if (ms < 60'000.0)    return QStringLiteral("%1 sec between clicks").arg(trimNumber(ms / 1000.0));
+    if (ms < 3'600'000.0) return QStringLiteral("%1 min between clicks").arg(trimNumber(ms / 60'000.0));
+    return QStringLiteral("%1 hours between clicks").arg(trimNumber(ms / 3'600'000.0));
+}
+
+QString MainWindow::trimNumber(double v)
+{
+    if (std::abs(v - std::round(v)) < 0.005) {
+        return QString::number(static_cast<long long>(std::round(v)));
+    }
+    QString s = QString::number(v, 'f', 2);
+    while (s.endsWith(QLatin1Char('0'))) s.chop(1);
+    if (s.endsWith(QLatin1Char('.')))    s.chop(1);
+    return s;
 }
 
 } // namespace QuadClicker
