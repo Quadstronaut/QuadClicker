@@ -16,49 +16,49 @@
 
 namespace QuadClicker {
 
-// ── Colour constants (matches design system) ──────────────────────────────────
+// ── Colour constants (Taneth palette — deep-green hull, gold HUD accent) ──────
 static const char* CSS_WINDOW = R"(
 QMainWindow, QWidget#centralWidget {
-    background-color: #1A1A1A;
+    background-color: #0A1410;
 }
 QLabel {
-    color: #F0F0F0;
+    color: #E8DCB0;
     font-size: 13px;
 }
 QLineEdit {
-    background-color: #242424;
-    color: #F0F0F0;
-    border: 1px solid #3A3A3A;
+    background-color: #13211C;
+    color: #E8DCB0;
+    border: 1px solid #2D5448;
     border-radius: 3px;
     padding: 3px 6px;
     font-size: 13px;
 }
 QLineEdit:focus {
-    border-color: #50C878;
+    border-color: #E8B547;
 }
 QLineEdit:disabled {
-    color: #555555;
-    background-color: #1E1E1E;
+    color: #3D5048;
+    background-color: #0A1410;
 }
 QComboBox {
-    background-color: #242424;
-    color: #F0F0F0;
-    border: 1px solid #3A3A3A;
+    background-color: #13211C;
+    color: #E8DCB0;
+    border: 1px solid #2D5448;
     border-radius: 3px;
     padding: 3px 6px;
     font-size: 13px;
 }
 QComboBox:focus {
-    border-color: #50C878;
+    border-color: #E8B547;
 }
 QComboBox QAbstractItemView {
-    background-color: #242424;
-    color: #F0F0F0;
-    selection-background-color: #50C878;
-    selection-color: #1A1A1A;
+    background-color: #13211C;
+    color: #E8DCB0;
+    selection-background-color: #E8B547;
+    selection-color: #0A1410;
 }
 QRadioButton {
-    color: #F0F0F0;
+    color: #E8DCB0;
     font-size: 13px;
     spacing: 6px;
 }
@@ -67,17 +67,17 @@ QRadioButton::indicator {
     height: 14px;
 }
 QRadioButton::indicator:checked {
-    background-color: #50C878;
-    border: 2px solid #50C878;
+    background-color: #E8B547;
+    border: 2px solid #E8B547;
     border-radius: 7px;
 }
 QRadioButton::indicator:unchecked {
-    background-color: #242424;
-    border: 2px solid #3A3A3A;
+    background-color: #13211C;
+    border: 2px solid #2D5448;
     border-radius: 7px;
 }
 QCheckBox {
-    color: #F0F0F0;
+    color: #E8DCB0;
     font-size: 13px;
     spacing: 6px;
 }
@@ -86,32 +86,33 @@ QCheckBox::indicator {
     height: 14px;
 }
 QCheckBox::indicator:checked {
-    background-color: #50C878;
-    border: 2px solid #50C878;
+    background-color: #E8B547;
+    border: 2px solid #E8B547;
     border-radius: 2px;
 }
 QCheckBox::indicator:unchecked {
-    background-color: #242424;
-    border: 2px solid #3A3A3A;
+    background-color: #13211C;
+    border: 2px solid #2D5448;
     border-radius: 2px;
 }
 QPushButton#smallBtn {
-    background-color: #2E2E2E;
-    color: #F0F0F0;
-    border: 1px solid #3A3A3A;
+    background-color: #1B2E27;
+    color: #E8DCB0;
+    border: 1px solid #2D5448;
     border-radius: 3px;
     padding: 3px 8px;
     font-size: 12px;
 }
 QPushButton#smallBtn:hover {
-    background-color: #3A3A3A;
+    background-color: #13211C;
+    border-color: #E8B547;
 }
 QPushButton#smallBtn:pressed {
-    background-color: #2A2A2A;
+    background-color: #0A1410;
 }
 QPushButton#startBtn {
-    background-color: #50C878;
-    color: #1A1A1A;
+    background-color: #E8B547;
+    color: #0A1410;
     border: none;
     border-radius: 4px;
     font-size: 14px;
@@ -119,14 +120,14 @@ QPushButton#startBtn {
     padding: 8px;
 }
 QPushButton#startBtn:hover {
-    background-color: #3DAF62;
+    background-color: #F5C75A;
 }
 QPushButton#startBtn:pressed {
-    background-color: #2E9150;
+    background-color: #B88A2A;
 }
 QPushButton#stopBtn {
-    background-color: #E05252;
-    color: #F0F0F0;
+    background-color: #E04030;
+    color: #FFFFFF;
     border: none;
     border-radius: 4px;
     font-size: 14px;
@@ -134,10 +135,10 @@ QPushButton#stopBtn {
     padding: 8px;
 }
 QPushButton#stopBtn:hover {
-    background-color: #C43C3C;
+    background-color: #C8331E;
 }
 QPushButton#stopBtn:pressed {
-    background-color: #A03030;
+    background-color: #A8281A;
 }
 )";
 
@@ -238,7 +239,7 @@ void MainWindow::buildUi()
 
     // ── Error label ────────────────────────────────────────────────────────
     m_errorLabel = new QLabel(this);
-    m_errorLabel->setStyleSheet(QStringLiteral("color: #E05252; font-size: 12px;"));
+    m_errorLabel->setStyleSheet(QStringLiteral("color: #E04030; font-size: 12px;"));
     m_errorLabel->setWordWrap(true);
     m_errorLabel->setVisible(false);
     root->addWidget(m_errorLabel);
@@ -253,17 +254,17 @@ void MainWindow::buildUi()
         m_statusDot = new QLabel(this);
         m_statusDot->setFixedSize(8, 8);
         m_statusDot->setStyleSheet(
-            QStringLiteral("background-color: #555555; border-radius: 4px;"));
+            QStringLiteral("background-color: #3D5048; border-radius: 4px;"));
         hl->addWidget(m_statusDot, 0, Qt::AlignVCenter);
 
         m_statusLabel = new QLabel(QStringLiteral("Stopped"), this);
         m_statusLabel->setStyleSheet(
-            QStringLiteral("color: #9A9A9A; font-size: 12px;"));
+            QStringLiteral("color: #7A9088; font-size: 12px;"));
         hl->addWidget(m_statusLabel, 0, Qt::AlignVCenter);
 
         m_clickCountLabel = new QLabel(this);
         m_clickCountLabel->setStyleSheet(
-            QStringLiteral("color: #9A9A9A; font-size: 12px;"));
+            QStringLiteral("color: #7A9088; font-size: 12px;"));
         m_clickCountLabel->setVisible(false);
         hl->addSpacing(10);
         hl->addWidget(m_clickCountLabel, 0, Qt::AlignVCenter);
@@ -286,7 +287,7 @@ void MainWindow::buildUi()
     if (!m_hotkeys->isSupported()) {
         QLabel* note = new QLabel(HotkeyManager::unsupportedNote(), this);
         note->setStyleSheet(
-            QStringLiteral("color: #9A9A9A; font-size: 11px;"));
+            QStringLiteral("color: #7A9088; font-size: 11px;"));
         note->setWordWrap(true);
         root->addWidget(note);
     }
@@ -456,17 +457,17 @@ QWidget* MainWindow::buildSectionSeparator(const QString& label)
     QFrame* line1 = new QFrame(this);
     line1->setFrameShape(QFrame::HLine);
     line1->setFixedWidth(8);
-    line1->setStyleSheet(QStringLiteral("color: #3A3A3A;"));
+    line1->setStyleSheet(QStringLiteral("color: #2D5448;"));
     hl->addWidget(line1, 0, Qt::AlignVCenter);
 
     QLabel* lbl = new QLabel(label, this);
     lbl->setStyleSheet(
-        QStringLiteral("color: #9A9A9A; font-size: 11px; background: transparent;"));
+        QStringLiteral("color: #7A9088; font-size: 11px; background: transparent;"));
     hl->addWidget(lbl, 0, Qt::AlignVCenter);
 
     QFrame* line2 = new QFrame(this);
     line2->setFrameShape(QFrame::HLine);
-    line2->setStyleSheet(QStringLiteral("color: #3A3A3A;"));
+    line2->setStyleSheet(QStringLiteral("color: #2D5448;"));
     hl->addWidget(line2, 1, Qt::AlignVCenter);
 
     return row;
@@ -551,7 +552,7 @@ QWidget* MainWindow::buildHotkeysRow()
     hl->addWidget(lbl);
 
     QLabel* startLbl = new QLabel(QStringLiteral("Start:"), this);
-    startLbl->setStyleSheet(QStringLiteral("color: #9A9A9A; font-size: 12px;"));
+    startLbl->setStyleSheet(QStringLiteral("color: #7A9088; font-size: 12px;"));
     hl->addWidget(startLbl);
 
     m_startHotkeyEdit = new QLineEdit(this);
@@ -565,7 +566,7 @@ QWidget* MainWindow::buildHotkeysRow()
     hl->addSpacing(10);
 
     QLabel* stopLbl = new QLabel(QStringLiteral("Stop:"), this);
-    stopLbl->setStyleSheet(QStringLiteral("color: #9A9A9A; font-size: 12px;"));
+    stopLbl->setStyleSheet(QStringLiteral("color: #7A9088; font-size: 12px;"));
     hl->addWidget(stopLbl);
 
     m_stopHotkeyEdit = new QLineEdit(QStringLiteral("F10"), this);
@@ -596,8 +597,8 @@ protected:
         }
         if (watched == m_edit && event->type() == QEvent::FocusIn) {
             m_edit->setStyleSheet(
-                QStringLiteral("QLineEdit { border: 1px solid #50C878; "
-                                "background-color: #242424; color: #F0F0F0; "
+                QStringLiteral("QLineEdit { border: 1px solid #E8B547; "
+                                "background-color: #13211C; color: #E8DCB0; "
                                 "border-radius: 3px; padding: 3px 6px; }"));
         }
         if (watched == m_edit && event->type() == QEvent::FocusOut) {
@@ -929,24 +930,24 @@ void MainWindow::setStatus(EngineStatus status)
     switch (status) {
     case EngineStatus::Clicking:
         m_statusDot->setStyleSheet(
-            QStringLiteral("background-color: #50C878; border-radius: 4px;"));
+            QStringLiteral("background-color: #E8B547; border-radius: 4px;"));
         m_statusLabel->setText(QStringLiteral("Clicking"));
         m_statusLabel->setStyleSheet(
-            QStringLiteral("color: #50C878; font-size: 12px;"));
+            QStringLiteral("color: #E8B547; font-size: 12px;"));
         break;
     case EngineStatus::WaitingForIdle:
         m_statusDot->setStyleSheet(
-            QStringLiteral("background-color: #E0A030; border-radius: 4px;"));
+            QStringLiteral("background-color: #5BA89A; border-radius: 4px;"));
         m_statusLabel->setText(QStringLiteral("Waiting for idle\u2026"));
         m_statusLabel->setStyleSheet(
-            QStringLiteral("color: #E0A030; font-size: 12px;"));
+            QStringLiteral("color: #5BA89A; font-size: 12px;"));
         break;
     default:
         m_statusDot->setStyleSheet(
-            QStringLiteral("background-color: #555555; border-radius: 4px;"));
+            QStringLiteral("background-color: #3D5048; border-radius: 4px;"));
         m_statusLabel->setText(QStringLiteral("Stopped"));
         m_statusLabel->setStyleSheet(
-            QStringLiteral("color: #9A9A9A; font-size: 12px;"));
+            QStringLiteral("color: #7A9088; font-size: 12px;"));
         break;
     }
 }
