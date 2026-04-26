@@ -2,11 +2,12 @@
 // QuadClicker — macOS
 //
 // Full SwiftUI view matching the Windows WPF layout.
-// Design tokens:
-//   Background     #1A1A1A   Surface        #242424   SurfaceElevated #2E2E2E
-//   Border         #3A3A3A   TextPrimary    #F0F0F0   TextSecondary   #9A9A9A
-//   TextDisabled   #555555   Accent         #50C878   AccentHover     #3DAF62
-//   AccentPressed  #2E9150   Danger         #E05252   StatusWaiting   #E0A030
+// Design tokens (Taneth palette — deep-green hull with gold HUD accent):
+//   Background      #0A1410   Surface          #13211C   SurfaceElevated #1B2E27
+//   Border          #2D5448   TextPrimary      #E8DCB0   TextSecondary   #7A9088
+//   TextDisabled    #3D5048   Accent           #E8B547   AccentHover     #F5C75A
+//   AccentPressed   #B88A2A   AccentForeground #0A1410   Danger          #E04030
+//   DangerHover     #C8331E   StatusWaiting    #5BA89A
 
 import SwiftUI
 import AppKit
@@ -27,19 +28,20 @@ extension Color {
 }
 
 extension Color {
-    static let qcBackground      = Color(hex: "#1A1A1A")
-    static let qcSurface         = Color(hex: "#242424")
-    static let qcSurfaceElevated = Color(hex: "#2E2E2E")
-    static let qcBorder          = Color(hex: "#3A3A3A")
-    static let qcTextPrimary     = Color(hex: "#F0F0F0")
-    static let qcTextSecondary   = Color(hex: "#9A9A9A")
-    static let qcTextDisabled    = Color(hex: "#555555")
-    static let qcAccent          = Color(hex: "#50C878")
-    static let qcAccentHover     = Color(hex: "#3DAF62")
-    static let qcAccentPressed   = Color(hex: "#2E9150")
-    static let qcDanger          = Color(hex: "#E05252")
-    static let qcDangerHover     = Color(hex: "#C43C3C")
-    static let qcStatusWaiting   = Color(hex: "#E0A030")
+    static let qcBackground       = Color(hex: "#0A1410")
+    static let qcSurface          = Color(hex: "#13211C")
+    static let qcSurfaceElevated  = Color(hex: "#1B2E27")
+    static let qcBorder           = Color(hex: "#2D5448")
+    static let qcTextPrimary      = Color(hex: "#E8DCB0")
+    static let qcTextSecondary    = Color(hex: "#7A9088")
+    static let qcTextDisabled     = Color(hex: "#3D5048")
+    static let qcAccent           = Color(hex: "#E8B547")
+    static let qcAccentHover      = Color(hex: "#F5C75A")
+    static let qcAccentPressed    = Color(hex: "#B88A2A")
+    static let qcAccentForeground = Color(hex: "#0A1410")
+    static let qcDanger           = Color(hex: "#E04030")
+    static let qcDangerHover      = Color(hex: "#C8331E")
+    static let qcStatusWaiting    = Color(hex: "#5BA89A")
 }
 
 // ── ViewModel ─────────────────────────────────────────────────────────────────
@@ -761,7 +763,7 @@ struct MainActionButtonStyle: ButtonStyle {
 
         configuration.label
             .font(.system(size: 15, weight: .semibold))
-            .foregroundColor(.white)
+            .foregroundColor(isDanger ? .white : Color.qcAccentForeground)
             .frame(maxWidth: .infinity)
             .frame(height: 38)
             .background(configuration.isPressed ? pressed : base)
