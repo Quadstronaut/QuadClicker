@@ -1,4 +1,6 @@
 using QuadClicker.PInvoke;
+using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -35,6 +37,7 @@ internal sealed class LocationPicker : IDisposable
         _pickCts = new CancellationTokenSource();
         var cts = _pickCts;
 
+        Log("BeginPick: minimizing owner");
         owner.WindowState = WindowState.Minimized;
 
         Application.Current.Dispatcher.BeginInvoke(async () =>
@@ -44,12 +47,27 @@ internal sealed class LocationPicker : IDisposable
                 await Task.Delay(300, cts.Token);
                 ShowOverlay(owner);
             }
-            catch (OperationCanceledException) { }
+            catch (OperationCanceledException) { Log("BeginPick: cancelled during delay"); }
+            catch (Exception ex) { Log($"BeginPick: exception {ex.GetType().Name}: {ex.Message}"); }
         });
     }
 
     private void ShowOverlay(Window owner)
     {
+        Log("ShowOverlay: creating overlay window");
+        var hintLabel = new TextBlock
+        {
+            Text                = "Click to select location  |  ESC to cancel",
+            Foreground          = Brushes.White,
+            Background          = new SolidColorBrush(Color.FromArgb(200, 20, 20, 20)),
+            FontSize            = 14,
+            FontFamily          = new FontFamily("Segoe UI"),
+            Padding             = new Thickness(14, 8, 14, 8),
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment   = VerticalAlignment.Top,
+            Margin              = new Thickness(0, 40, 0, 0)
+        };
+
         _overlay = new Window
         {
             Background          = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0)),
@@ -59,18 +77,7 @@ internal sealed class LocationPicker : IDisposable
             Topmost             = true,
             Cursor              = Cursors.Cross,
             ShowInTaskbar       = false,
-            Content             = new TextBlock
-            {
-                Text                = "Click to select location  |  ESC to cancel",
-                Foreground          = Brushes.White,
-                Background          = new SolidColorBrush(Color.FromArgb(200, 20, 20, 20)),
-                FontSize            = 14,
-                FontFamily          = new FontFamily("Segoe UI"),
-                Padding             = new Thickness(14, 8, 14, 8),
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment   = VerticalAlignment.Top,
-                Margin              = new Thickness(0, 40, 0, 0)
-            }
+            Content             = hintLabel
         };
 
         _overlay.KeyDown += (_, e) =>
@@ -79,9 +86,18 @@ internal sealed class LocationPicker : IDisposable
         };
 
         _overlay.Show();
+        Log("ShowOverlay: overlay shown");
 
         _proc   = HookCallback;
         _hookId = SetHook(_proc);
+        int err = Marshal.GetLastWin32Error();
+        Log($"ShowOverlay: SetHook returned 0x{_hookId.ToInt64():X}, GetLastError={err}");
+
+        if (_hookId == IntPtr.Zero)
+        {
+            hintLabel.Text       = "Hook install failed — see %APPDATA%\\QuadClicker\\picker.log. ESC to cancel.";
+            hintLabel.Foreground = Brushes.Red;
+        }
     }
 
     private void CancelPick(Window owner)
@@ -94,16 +110,20 @@ internal sealed class LocationPicker : IDisposable
     {
         if (nCode >= 0 && wParam == (IntPtr)NativeMethods.WM_LBUTTONUP)
         {
+            Log($"HookCallback: WM_LBUTTONUP captured");
+
             // Unhook first — prevents re-entry
             var hookId = _hookId;
             _hookId = IntPtr.Zero;
             NativeMethods.UnhookWindowsHookEx(hookId);
 
             NativeMethods.GetCursorPos(out var p);
+            Log($"HookCallback: cursor at ({p.X}, {p.Y}), dispatching");
 
             // BeginInvoke (async) — never block inside a low-level hook callback
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
+                Log("HookCallback: dispatcher action running, closing overlay and raising LocationPicked");
                 _overlay?.Close();
                 _overlay = null;
                 LocationPicked?.Invoke(p.X, p.Y);
@@ -132,12 +152,30 @@ internal sealed class LocationPicker : IDisposable
 
     private static IntPtr SetHook(NativeMethods.LowLevelMouseProc proc)
     {
-        using var process = System.Diagnostics.Process.GetCurrentProcess();
-        var module = process.MainModule;
-        return module is not null
-            ? NativeMethods.SetWindowsHookEx(NativeMethods.WH_MOUSE_LL, proc,
-                NativeMethods.GetModuleHandle(module.ModuleName), 0)
-            : IntPtr.Zero;
+        // Use the assembly's HINSTANCE directly. Avoids GetModuleHandle, whose
+        // [LibraryImport] form doesn't auto-resolve the A/W suffix and would
+        // throw EntryPointNotFoundException at runtime.
+        var hMod = Marshal.GetHINSTANCE(typeof(LocationPicker).Module);
+        return NativeMethods.SetWindowsHookEx(NativeMethods.WH_MOUSE_LL, proc, hMod, 0);
+    }
+
+    // ── Diagnostics ───────────────────────────────────────────────────────────
+    // Writes to %APPDATA%\QuadClicker\picker.log so we can see what happens
+    // across the BeginPick → ShowOverlay → SetHook → HookCallback → dispatch
+    // chain when picking misbehaves on a user's machine.
+    private static readonly string LogPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "QuadClicker", "picker.log");
+
+    private static void Log(string msg)
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(LogPath)!);
+            File.AppendAllText(LogPath,
+                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {msg}{Environment.NewLine}");
+        }
+        catch { /* never let diagnostics break the picker */ }
     }
 
     public void Dispose()
