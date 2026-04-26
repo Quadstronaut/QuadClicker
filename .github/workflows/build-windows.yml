@@ -26,11 +26,8 @@ jobs:
         run: dotnet build windows/QuadClicker.csproj -c Release --no-restore
 
       - name: Test
-        run: dotnet test windows/Tests/QuadClicker.Tests.csproj --no-build -c Release -v normal
-        # Note: test project builds separately since it references source files directly
-        continue-on-error: false
-
-      - name: Test (build + run)
+        # Test project Compile-Includes source files from the main project, so its
+        # output dir is independent — let `dotnet test` handle build + run in one shot.
         run: dotnet test windows/Tests/QuadClicker.Tests.csproj -c Release -v normal
 
       - name: Publish
