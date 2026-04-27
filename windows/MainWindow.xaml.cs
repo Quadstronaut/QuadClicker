@@ -1,6 +1,7 @@
 using QuadClicker.Core;
 using QuadClicker.Models;
 using QuadClicker.PInvoke;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -55,6 +56,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        VersionLabel.Text = "v" + (Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "?");
         _picker.LocationPicked  += OnLocationPicked;
         _picker.PickCancelled   += OnPickCancelled;
         _engine.ClickCountUpdated += OnClickCountUpdated;
