@@ -27,6 +27,11 @@ public sealed class AppSettings
     public string      StartHotkeyText    { get; set; } = "";
     public string      StopHotkeyText     { get; set; } = "F10";
 
+    // ── Self-update ───────────────────────────────────────────────────────────
+    public bool     UpdateCheckEnabled { get; set; } = true;
+    public string?  SkippedVersion     { get; set; } = null;
+    public DateTime LastCheckUtc       { get; set; } = DateTime.MinValue;
+
     // ── Persistence ───────────────────────────────────────────────────────────
 
     private static readonly string SettingsPath = Path.Combine(

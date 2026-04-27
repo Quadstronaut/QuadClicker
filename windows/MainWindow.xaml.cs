@@ -51,6 +51,10 @@ public partial class MainWindow : Window
     // ── Settings ──────────────────────────────────────────────────────────────
     private AppSettings Settings => ((App)Application.Current).Settings;
 
+    // ── Self-update state ─────────────────────────────────────────────────────
+    private UpdateCheckResult? _pendingUpdate;
+    private static readonly TimeSpan UpdateCheckMinInterval = TimeSpan.FromHours(6);
+
     // ─────────────────────────────────────────────────────────────────────────
 
     public MainWindow()
@@ -77,6 +81,115 @@ public partial class MainWindow : Window
 
         _hotkeys = new HotkeyManager(helper.Handle);
         LoadSettings();
+        ShowPostUpdateMessageIfRequested();
+        _ = TryStartUpdateCheckAsync();
+    }
+
+    // ── Self-update ───────────────────────────────────────────────────────────
+
+    private void ShowPostUpdateMessageIfRequested()
+    {
+        var app = (App)Application.Current;
+        if (!app.Properties.Contains("PostUpdateVersion")) return;
+
+        string ver = app.Properties["PostUpdateVersion"] as string ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(ver))
+            ver = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "?";
+
+        UpdateBannerHeadline.Text = $"Updated to v{ver}";
+        UpdateBannerSubtext.Text  = "Your settings were preserved.";
+        UpdateBtn.Visibility           = Visibility.Collapsed;
+        UpdateSkipVersionBtn.Visibility = Visibility.Collapsed;
+        UpdateSkipBtn.Content     = "Dismiss";
+        UpdateBanner.Visibility   = Visibility.Visible;
+    }
+
+    private async Task TryStartUpdateCheckAsync()
+    {
+        var app = (App)Application.Current;
+        if (app.Properties.Contains("NoUpdateCheck")) return;
+        if (!Settings.UpdateCheckEnabled)             return;
+
+        if (DateTime.UtcNow - Settings.LastCheckUtc < UpdateCheckMinInterval) return;
+
+        string current = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.0.0";
+
+        UpdateCheckResult result;
+        try
+        {
+            result = await Task.Run(() => UpdateChecker.CheckAsync(current));
+        }
+        catch
+        {
+            return; // never block the UI on a failed check
+        }
+
+        Settings.LastCheckUtc = DateTime.UtcNow;
+
+        if (!result.HasUpdate) return;
+        if (!string.IsNullOrEmpty(Settings.SkippedVersion) &&
+            string.Equals(Settings.SkippedVersion, result.LatestVersion, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        Dispatcher.Invoke(() => ShowUpdateBanner(result));
+    }
+
+    private void ShowUpdateBanner(UpdateCheckResult result)
+    {
+        _pendingUpdate = result;
+        UpdateBannerHeadline.Text = $"QuadClicker v{result.LatestVersion} is available";
+        UpdateBannerSubtext.Text  = "Click Update to download and install automatically.";
+        UpdateBtn.Visibility           = Visibility.Visible;
+        UpdateSkipVersionBtn.Visibility = Visibility.Visible;
+        UpdateSkipBtn.Content     = "Skip";
+        UpdateBanner.Visibility   = Visibility.Visible;
+    }
+
+    private async void UpdateBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (_pendingUpdate is null) return;
+
+        UpdateBtn.IsEnabled       = false;
+        UpdateSkipBtn.IsEnabled   = false;
+        UpdateSkipVersionBtn.IsEnabled = false;
+        UpdateBannerSubtext.Text  = "Downloading…";
+
+        try
+        {
+            string exe = Updater.GetRunningExePath();
+            await Task.Run(() => Updater.DownloadAndStageAsync(_pendingUpdate, exe));
+            UpdateBannerSubtext.Text = "Installing — the app will restart.";
+            // Persist before shutdown so the new build sees the latest settings.
+            SaveSettings();
+            Application.Current.Shutdown();
+        }
+        catch (Exception ex)
+        {
+            UpdateBannerHeadline.Text = "Update failed";
+            UpdateBannerSubtext.Text  = ex.Message;
+            UpdateBtn.IsEnabled       = true;
+            UpdateSkipBtn.IsEnabled   = true;
+            UpdateSkipVersionBtn.IsEnabled = true;
+        }
+    }
+
+    private void UpdateSkip_Click(object sender, RoutedEventArgs e)
+    {
+        UpdateBanner.Visibility = Visibility.Collapsed;
+        _pendingUpdate = null;
+    }
+
+    private void UpdateSkipVersion_Click(object sender, RoutedEventArgs e)
+    {
+        if (_pendingUpdate is not null)
+        {
+            Settings.SkippedVersion = _pendingUpdate.LatestVersion;
+            Settings.Save();
+        }
+        UpdateBanner.Visibility = Visibility.Collapsed;
+        _pendingUpdate = null;
     }
 
     // ── WndProc ───────────────────────────────────────────────────────────────

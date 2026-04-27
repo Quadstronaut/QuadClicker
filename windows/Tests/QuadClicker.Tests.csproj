@@ -32,6 +32,8 @@
     <Compile Include="..\PInvoke\NativeMethods.cs" />
     <Compile Include="..\Models\AppSettings.cs" />
     <Compile Include="..\Models\ClickRateMode.cs" />
+    <Compile Include="..\Core\UpdateChecker.cs" />
+    <Compile Include="..\Core\Updater.cs" />
   </ItemGroup>
 
 </Project>

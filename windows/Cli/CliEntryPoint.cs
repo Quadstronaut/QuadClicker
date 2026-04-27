@@ -21,6 +21,11 @@ internal static class CliEntryPoint
             return 0;
         }
 
+        if (args.Length >= 1 && args[0] == "--check-update")
+        {
+            return RunCheckUpdate();
+        }
+
         if (!TryParseArgs(args, out var session, out string parseError))
         {
             Console.Error.WriteLine($"Error: {parseError}");
@@ -162,7 +167,14 @@ internal static class CliEntryPoint
                 }
                 case "--no-gui":
                 case "--minimized":
+                case "--no-update-check":
                     break; // Handled at the program entry level
+
+                case "--post-update":
+                    // The relaunched-after-update flag carries an optional version arg.
+                    // We don't act on it in CLI mode but accept it so it isn't a parse error.
+                    if (i + 1 < args.Length && !args[i + 1].StartsWith("--")) i++;
+                    break;
 
                 default:
                     error = $"Unknown argument: '{arg}'";
@@ -175,6 +187,29 @@ internal static class CliEntryPoint
         session = new ClickSession(rate, button, clickType, useCurrentPos, x, y,
                                    stopClicks, stopSeconds, idleWait);
         return true;
+    }
+
+    private static int RunCheckUpdate()
+    {
+        var ver = typeof(CliEntryPoint).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
+        try
+        {
+            var result = QuadClicker.Core.UpdateChecker.CheckAsync(ver).GetAwaiter().GetResult();
+            if (result.HasUpdate)
+            {
+                Console.WriteLine($"Update available: v{result.LatestVersion} (current v{ver})");
+                if (!string.IsNullOrEmpty(result.ReleaseNotesUrl))
+                    Console.WriteLine($"  {result.ReleaseNotesUrl}");
+                return 0;
+            }
+            Console.WriteLine($"Up to date (v{ver})");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Update check failed: {ex.Message}");
+            return 2;
+        }
     }
 
     private static void PrintHelp() => Console.WriteLine("""
@@ -192,6 +227,8 @@ internal static class CliEntryPoint
           --idle-wait <n>              Wait for N seconds of system idle before starting
           --no-gui                     Force headless mode
           --minimized                  Launch GUI minimized to tray
+          --no-update-check            Disable the launch-time GitHub update check (GUI only)
+          --check-update               Check for an update, print result, exit 0
           --version                    Print version and exit 0
           --help                       Print this help and exit 0
 

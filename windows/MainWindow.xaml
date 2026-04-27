@@ -2,8 +2,9 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="QuadClicker"
-        Width="430" Height="472"
-        MinWidth="380" MinHeight="462"
+        Width="430"
+        MinWidth="380" MinHeight="472"
+        SizeToContent="Height"
         Background="{StaticResource BackgroundBrush}"
         Foreground="{StaticResource TextPrimaryBrush}"
         ResizeMode="CanMinimize"
@@ -11,7 +12,48 @@
         Closing="Window_Closing"
         StateChanged="Window_StateChanged">
 
-    <Grid Margin="16,12">
+    <DockPanel LastChildFill="True">
+
+        <!-- ── Update banner (non-modal; visible only when an update is available) ── -->
+        <Border x:Name="UpdateBanner"
+                DockPanel.Dock="Top"
+                Visibility="Collapsed"
+                Background="{StaticResource SurfaceElevatedBrush}"
+                BorderBrush="{StaticResource AccentBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="12,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Orientation="Vertical" VerticalAlignment="Center">
+                    <TextBlock x:Name="UpdateBannerHeadline"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               FontSize="13" FontWeight="SemiBold"
+                               TextWrapping="Wrap" />
+                    <TextBlock x:Name="UpdateBannerSubtext"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               FontSize="11" Margin="0,2,0,0"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
+                    <Button x:Name="UpdateBtn" Content="Update" Width="62"
+                            Style="{StaticResource SmallButtonStyle}"
+                            Click="UpdateBtn_Click" />
+                    <Button x:Name="UpdateSkipBtn" Content="Skip" Width="48" Margin="6,0,0,0"
+                            Style="{StaticResource SmallButtonStyle}"
+                            Click="UpdateSkip_Click"
+                            ToolTip="Dismiss for this session" />
+                    <Button x:Name="UpdateSkipVersionBtn" Content="Skip this version" Width="120" Margin="6,0,0,0"
+                            Style="{StaticResource SmallButtonStyle}"
+                            Click="UpdateSkipVersion_Click"
+                            ToolTip="Don't ask again until a newer version appears" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid Margin="16,12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />  <!-- Click Rate -->
             <RowDefinition Height="6" />
@@ -196,5 +238,6 @@
                    Foreground="{StaticResource TextDisabledBrush}"
                    FontSize="9" Margin="0,1,2,0" />
 
-    </Grid>
+        </Grid>
+    </DockPanel>
 </Window>
