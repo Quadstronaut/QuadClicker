@@ -2,8 +2,8 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="QuadClicker"
-        Width="430" Height="458"
-        MinWidth="380" MinHeight="448"
+        Width="430" Height="472"
+        MinWidth="380" MinHeight="462"
         Background="{StaticResource BackgroundBrush}"
         Foreground="{StaticResource TextPrimaryBrush}"
         ResizeMode="CanMinimize"
@@ -32,6 +32,7 @@
             <RowDefinition Height="Auto" />  <!-- Status + click count -->
             <RowDefinition Height="8" />
             <RowDefinition Height="38" />    <!-- Start/Stop button -->
+            <RowDefinition Height="Auto" />  <!-- Version label -->
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="155" />
@@ -187,6 +188,13 @@
                 Style="{StaticResource StartButtonStyle}"
                 Padding="0"
                 Click="StartStopBtn_Click" />
+
+        <!-- ── Version (subtle, bottom-right) ──────────────────────────────── -->
+        <TextBlock Grid.Row="19" Grid.Column="0" Grid.ColumnSpan="2"
+                   x:Name="VersionLabel"
+                   HorizontalAlignment="Right"
+                   Foreground="{StaticResource TextDisabledBrush}"
+                   FontSize="9" Margin="0,1,2,0" />
 
     </Grid>
 </Window>

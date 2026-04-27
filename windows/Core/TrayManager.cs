@@ -17,7 +17,7 @@ internal sealed class TrayManager : IDisposable
     {
         _icon = new NotifyIcon
         {
-            Text    = "QuadClicker",
+            Text    = "QuadClicker - now with 4x the clicks",
             Visible = false,
             Icon    = SystemIcons.Application
         };
@@ -47,7 +47,7 @@ internal sealed class TrayManager : IDisposable
     internal void SetActiveState(bool isClicking)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        _icon.Text = isClicking ? "QuadClicker — Clicking" : "QuadClicker";
+        _icon.Text = isClicking ? "QuadClicker — Clicking" : "QuadClicker - now with 4x the clicks";
         // TODO: swap to animated icon when assets are available
     }
 
