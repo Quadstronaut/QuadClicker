@@ -48,11 +48,11 @@ QuadClicker/
 ├── windows/         ← WPF / C# / .NET 10
 ├── macos/           ← SwiftUI / Swift
 ├── linux/           ← Qt6 / C++
-├── .github/
-│   └── workflows/   ← CI/CD for all three platforms + release
-├── ref_imgs/        ← Design reference screenshots
-├── PLAN.md          ← Living design document
+├── .github/workflows/  ← CI/CD per platform + release
+├── Chocolatey/      ← Chocolatey package manifest
+├── Scoop/           ← Scoop bucket manifest
 ├── CODE_SIGNING.md  ← Signing and notarization guide
+├── LICENSE
 └── README.md
 ```
 
@@ -213,7 +213,7 @@ Settings are persisted automatically on exit and loaded on launch. JSON format i
 | Phase | Description | Status |
 |---|---|---|
 | 0 | Monorepo restructure + CI/CD skeleton | ✅ Done |
-| 1 | Windows WPF — released **v0.1.0** as a self-contained single-file EXE | ✅ Done |
+| 1 | Windows WPF — shipped at **v0.1.1** as a single-file EXE; version label visible bottom-right of the window, tray tooltip "QuadClicker - now with 4x the clicks" | ✅ Done |
 | 2 | macOS SwiftUI — code-complete, **unverified** (never compiled or run; `build-macos.yml` is a no-op placeholder) | 🔨 Pending Mac + Xcode |
 | 3 | Linux Qt6/C++ — **build verified** on Ubuntu 24.04 (Qt 6.4.2) under WSL2/WSLg: clean compile, all unit tests pass, CLI happy + parse-error paths exercised, GUI launches and renders. CI (`build-linux.yml`) now runs the real build. No `.deb` / AppImage published yet. | ✅ Built + tested |
 
@@ -232,11 +232,23 @@ Latest builds are published on GitHub Releases:
 
 | Platform | Status | Notes |
 |---|---|---|
-| Windows x64 | `QuadClicker-win-x64.zip` | Self-contained single-file EXE — **no .NET install required**. Unzip and run. |
+| Windows x64 | `QuadClicker.exe` (v0.1.1) | Self-contained single-file EXE — **no .NET install required**. Download and run. |
 | macOS | Not yet released | Phase 2 build is unverified; no signed/notarized artifact yet. |
 | Linux | Not yet released | Build verified on Ubuntu 24.04 (Qt 6.4.2). No signed `.deb` / `.rpm` / AppImage published yet — packaging is the next step. |
 
 The Windows binary is currently **unsigned** — Windows SmartScreen will warn on first launch until an Authenticode certificate is in place (see `CODE_SIGNING.md`).
+
+### Distribution channels (in flight)
+
+QuadClicker is being prepared for distribution through every major package manager. Manifests for these are already in the repo and pinned at v0.1.1:
+
+| Channel | Manifest | Install command (once published) |
+|---|---|---|
+| Chocolatey (Windows) | `Chocolatey/quadclicker.nuspec` | `choco install quadclicker` |
+| Scoop (Windows) | `Scoop/quadclicker.json` | `scoop install quadclicker` |
+| winget (Windows) | _planned_ | `winget install Quadstronaut.QuadClicker` |
+| Homebrew Cask (macOS) | _planned_ | `brew install --cask quadclicker` |
+| Snap, Flatpak, AppImage, `.deb` (Linux) | _planned_ | various |
 
 ---
 
