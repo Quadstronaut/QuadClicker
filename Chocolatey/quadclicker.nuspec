@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>QuadClicker</id>
+    <version>0.1.1</version>
+    <packageSourceUrl>https://github.com/Quadstronaut/QuadClicker</packageSourceUrl>
+    <owners>Quadstronaut</owners>
+    <title>QuadClicker</title>
+    <authors>Quadstronaut</authors>
+    <projectUrl>https://github.com/Quadstronaut/QuadClicker/</projectUrl>
+    <licenseUrl>https://github.com/Quadstronaut/QuadClicker/blob/main/LICENSE</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <projectSourceUrl>https://github.com/Quadstronaut/QuadClicker</projectSourceUrl>
+    <bugTrackerUrl>https://github.com/Quadstronaut/QuadClicker/issues</bugTrackerUrl>
+    <tags>quadclicker autoclicker automation utility</tags>
+    <summary>A native, open-source auto-clicker for Windows.</summary>
+    <description>QuadClicker is a native auto-clicker application developed to be fast, open-source, and cross-platform. This package installs the Windows version of the tool.</description>
+    <releaseNotes>https://github.com/Quadstronaut/QuadClicker/releases/tag/v0.1.1</releaseNotes>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>
