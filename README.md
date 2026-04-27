@@ -5,7 +5,7 @@
 [![Windows Build](https://github.com/Quadstronaut/QuadClicker/actions/workflows/build-windows.yml/badge.svg)](https://github.com/Quadstronaut/QuadClicker/actions/workflows/build-windows.yml)
 [![macOS Build](https://github.com/Quadstronaut/QuadClicker/actions/workflows/build-macos.yml/badge.svg)](https://github.com/Quadstronaut/QuadClicker/actions/workflows/build-macos.yml)
 [![Linux Build](https://github.com/Quadstronaut/QuadClicker/actions/workflows/build-linux.yml/badge.svg)](https://github.com/Quadstronaut/QuadClicker/actions/workflows/build-linux.yml)
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ---
 
@@ -265,8 +265,8 @@ Please open an issue first for major changes.
 
 ## License
 
-Copyright © 2026 Quadstronaut (Kyle Green).
-Licensed under the [GNU General Public License v3.0](LICENSE).
+Copyright © 2026 Kyle Green / Quadstronaut.
+Licensed under the [MIT License](LICENSE) with an attribution clause: redistributions must retain credit to Kyle Green (Quadstronaut) and link back to [github.com/Quadstronaut/QuadClicker](https://github.com/Quadstronaut/QuadClicker).
 
 ---
 

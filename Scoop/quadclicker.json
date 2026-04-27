@@ -2,7 +2,7 @@
     "version": "0.1.1",
     "description": "A native, open-source auto-clicker for Windows.",
     "homepage": "https://github.com/Quadstronaut/QuadClicker/",
-    "license": "GPL-3.0-only",
+    "license": "MIT",
     "url": "https://github.com/Quadstronaut/QuadClicker/releases/download/v0.1.1/QuadClicker.exe",
     "hash": "sha256:1550182037797286b0dfe4cb744e19136c457f74a191e6977feb95666fba8ea7",
     "bin": "QuadClicker.exe",
