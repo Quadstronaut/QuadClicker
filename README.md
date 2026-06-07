@@ -9,9 +9,11 @@
 
 ---
 
+> **Full documentation:** [github.com/Quadstronaut/QuadClicker/wiki](https://github.com/Quadstronaut/QuadClicker/wiki) — Installation, CLI Reference, hotkey notes, troubleshooting, and building from source. This README is the quickstart and status overview; the wiki is the canonical deep reference.
+
 ## Overview
 
-QuadClicker is the definitive open-source auto-clicker: fully configurable, scriptable via CLI, accessibility-first, and distributed everywhere. Built as a monorepo with three separate **native** applications — no cross-platform frameworks, ever.
+QuadClicker is a fast, native, open-source auto-clicker: fully configurable, scriptable via CLI, and built as a monorepo with three separate **native** applications — no cross-platform frameworks, ever.
 
 | Platform | Language | Framework | Min OS |
 |---|---|---|---|
@@ -124,7 +126,7 @@ sudo cmake --install build
 
 ## CLI Reference
 
-When any argument other than `--minimized` is passed, the app runs headless with no GUI.
+When any argument other than `--minimized`, `--no-update-check`, or `--post-update` is passed, the app runs headless with no GUI. See the [wiki CLI Reference](https://github.com/Quadstronaut/QuadClicker/wiki/CLI-Reference) for the full flag table and examples.
 
 ```
 quadclicker [OPTIONS]
@@ -140,7 +142,9 @@ quadclicker [OPTIONS]
 | `--stop-after-seconds <n>` | float | 0 (unlimited) | Stop after N seconds |
 | `--idle-wait <n>` | float | 0 (disabled) | Wait for N seconds of idle before starting |
 | `--no-gui` | flag | auto | Force headless mode |
-| `--minimized` | flag | off | Launch GUI minimized to tray |
+| `--minimized` | flag | off | Launch GUI minimized to tray (GUI-compatible — does not trigger CLI mode) |
+| `--no-update-check` | flag | off | Skip the launch-time update check; GUI-compatible (Windows only) |
+| `--check-update` | flag | — | Check for update, print result, exit 0 (Windows only) |
 | `--version` | flag | — | Print version and exit 0 |
 | `--help` | flag | — | Print usage and exit 0 |
 
@@ -220,7 +224,7 @@ Settings are persisted automatically on exit and loaded on launch. JSON format i
 ### Known limitations
 
 - The mode-based **Click Rate** redesign and the **Taneth** palette are now in all three platforms' source. Linux is verified end-to-end; macOS source has them but remains unbuilt pending an Xcode-equipped machine.
-- Linux global hotkeys: `XGrabKey` (X11) is used; Wayland support is limited to compositors that expose `org.kde.kglobalaccel` (KDE) — GNOME Wayland users will not get global hotkeys until a compositor-side API exists.
+- Linux global hotkeys: `XGrabKey` (X11) is used. Under Wayland, hotkeys are **not supported** — the `HotkeyManager` detects the Wayland platform at startup and disables itself entirely. Use the Start/Stop button or the system tray instead. A compositor-side D-Bus shortcut API is a future milestone.
 
 ---
 
