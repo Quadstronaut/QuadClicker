@@ -1,4 +1,8 @@
-# QuadClicker
+<div align="center">
+
+<a id="top"></a>
+
+# ⚡ QuadClicker
 
 **A fast, native, open-source auto-clicker for Windows, macOS, and Linux.**
 
@@ -7,62 +11,120 @@
 [![Linux Build](https://github.com/Quadstronaut/QuadClicker/actions/workflows/build-linux.yml/badge.svg)](https://github.com/Quadstronaut/QuadClicker/actions/workflows/build-linux.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
+[![Last Commit](https://img.shields.io/github/last-commit/Quadstronaut/QuadClicker?logo=git&logoColor=white)](https://github.com/Quadstronaut/QuadClicker/commits/master)
+[![Repo Size](https://img.shields.io/github/repo-size/Quadstronaut/QuadClicker?logo=github)](https://github.com/Quadstronaut/QuadClicker)
+[![Top Language](https://img.shields.io/github/languages/top/Quadstronaut/QuadClicker)](https://github.com/Quadstronaut/QuadClicker)
+[![GitHub License](https://img.shields.io/github/license/Quadstronaut/QuadClicker)](LICENSE)
+
+[![C#](https://img.shields.io/badge/C%23-.NET%2010-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![Swift](https://img.shields.io/badge/Swift-SwiftUI-F05138?logo=swift&logoColor=white)](https://developer.apple.com/swift/)
+[![C++](https://img.shields.io/badge/C++-Qt6-00979D?logo=qt&logoColor=white)](https://www.qt.io/)
+
 ---
 
+[![Overview](https://img.shields.io/badge/Overview-0A1410?style=for-the-badge&logo=readme&logoColor=E8B547)](#overview)
+[![Features](https://img.shields.io/badge/Features-0A1410?style=for-the-badge&logo=sparkles&logoColor=E8B547)](#features)
+[![Building](https://img.shields.io/badge/Building-0A1410?style=for-the-badge&logo=hammer&logoColor=E8B547)](#building)
+[![CLI](https://img.shields.io/badge/CLI_Reference-0A1410?style=for-the-badge&logo=terminal&logoColor=E8B547)](#cli-reference)
+[![Downloads](https://img.shields.io/badge/Downloads-0A1410?style=for-the-badge&logo=download&logoColor=E8B547)](#releases--downloads)
+[![Design](https://img.shields.io/badge/Design_System-0A1410?style=for-the-badge&logo=palette&logoColor=E8B547)](#design-system)
+
+</div>
+
+---
+
+> [!IMPORTANT]
 > **Full documentation:** [github.com/Quadstronaut/QuadClicker/wiki](https://github.com/Quadstronaut/QuadClicker/wiki) — Installation, CLI Reference, hotkey notes, troubleshooting, and building from source. This README is the quickstart and status overview; the wiki is the canonical deep reference.
 
-## Overview
+---
+
+<a id="overview"></a>
+
+## 🗺️ Overview
 
 QuadClicker is a fast, native, open-source auto-clicker: fully configurable, scriptable via CLI, and built as a monorepo with three separate **native** applications — no cross-platform frameworks, ever.
 
 | Platform | Language | Framework | Min OS |
-|---|---|---|---|
-| Windows 10/11 | C# / .NET 10 | WPF | Windows 10 22H2 |
-| macOS | Swift | SwiftUI | macOS 13 Ventura |
-| Linux | C++ | Qt6 | Ubuntu 22.04 / Fedora 38 |
+|:---|:---|:---|:---|
+| 🪟 Windows 10/11 | C# / .NET 10 | WPF | Windows 10 22H2 |
+| 🍎 macOS | Swift | SwiftUI | macOS 13 Ventura |
+| 🐧 Linux | C++ | Qt6 | Ubuntu 22.04 / Fedora 38 |
 
 ---
 
-## Features
+<a id="features"></a>
 
-- **Click Rate** — Pick **Delay** (`ms` / `sec` / `min`) or **Frequency** (per sec / per min / per hour) via radio. CLI also accepts free-form: `100ms`, `5s`, `2min`, `10/s`, `10cps`, `600/min`, `600cpm`, `60/h`, `60cph`, or a bare integer (ms). Bounds: 1 ms ≤ delay ≤ 360 min.
-- **Mouse Button** — Left, Right, or Middle
-- **Click Type** — Single or Double (uses OS double-click interval)
-- **Location Modes**
-  - Current cursor position
-  - Fixed XY coordinate
-  - Visual overlay picker — click anywhere on screen to capture coordinates
-- **Stop Conditions** — After N clicks, after N seconds, or manual stop
-- **Idle Detection** — Wait for N seconds of system idle before starting
-- **Hotkeys** — Independently configurable start and stop hotkeys (global, works when minimized)
-- **System Tray** — Minimize to tray; close button quits
-- **Always on Top** — Optional float above all windows
-- **Settings Persistence** — All settings saved and restored between launches
-- **CLI Mode** — Same binary, full headless execution (see [CLI Reference](#cli-reference))
-- **Dark Theme** — Native dark mode. Windows ships the new "Taneth" palette (deep-green hull, warm gold HUD accent); macOS and Linux still ship the original emerald-green palette in source until the redesign is ported.
+## ✨ Features
+
+| Feature | Description |
+|:---|:---|
+| **Click Rate** | Pick **Delay** (`ms` / `sec` / `min`) or **Frequency** (per sec / per min / per hour) via radio. CLI accepts free-form: `100ms`, `5s`, `2min`, `10/s`, `10cps`, `600/min`, `600cpm`, `60/h`, `60cph`, or a bare integer (ms). Bounds: 1 ms ≤ delay ≤ 360 min. |
+| **Mouse Button** | Left, Right, or Middle |
+| **Click Type** | Single or Double (uses OS double-click interval) |
+| **Location Modes** | Current cursor position · Fixed XY coordinate · Visual overlay picker |
+| **Stop Conditions** | After N clicks · After N seconds · Manual stop |
+| **Idle Detection** | Wait for N seconds of system idle before starting |
+| **Hotkeys** | Independently configurable start and stop hotkeys (global, works when minimized) |
+| **System Tray** | Minimize to tray; close button quits |
+| **Always on Top** | Optional float above all windows |
+| **Settings Persistence** | All settings saved and restored between launches |
+| **CLI Mode** | Same binary, full headless execution |
+| **Dark Theme** | Native dark mode. Windows ships the new "Taneth" palette (deep-green hull, warm gold HUD accent); macOS and Linux still ship the original emerald-green palette in source until the redesign is ported. |
 
 ---
 
-## Repository Structure
+<a id="structure"></a>
+
+## 📁 Repository Structure
 
 ```
 QuadClicker/
-├── windows/         ← WPF / C# / .NET 10
-├── macos/           ← SwiftUI / Swift
-├── linux/           ← Qt6 / C++
+├── windows/            ← WPF / C# / .NET 10
+├── macos/              ← SwiftUI / Swift
+├── linux/              ← Qt6 / C++
 ├── .github/workflows/  ← CI/CD per platform + release
-├── Chocolatey/      ← Chocolatey package manifest
-├── Scoop/           ← Scoop bucket manifest
-├── CODE_SIGNING.md  ← Signing and notarization guide
+├── Chocolatey/         ← Chocolatey package manifest
+├── Scoop/              ← Scoop bucket manifest
+├── CODE_SIGNING.md     ← Signing and notarization guide
 ├── LICENSE
 └── README.md
 ```
 
+```mermaid
+graph TD
+    subgraph Monorepo["QuadClicker Monorepo"]
+        W["🪟 windows/<br/>C# · .NET 10 · WPF"]
+        M["🍎 macos/<br/>Swift · SwiftUI"]
+        L["🐧 linux/<br/>C++ · Qt6"]
+    end
+
+    subgraph CI[".github/workflows/"]
+        BW["build-windows.yml"]
+        BM["build-macos.yml"]
+        BL["build-linux.yml"]
+        R["release.yml"]
+    end
+
+    subgraph Dist["Distribution"]
+        EXE["QuadClicker.exe<br/>(self-contained)"]
+        PKG["Chocolatey / Scoop<br/>winget · Homebrew<br/>(in flight)"]
+    end
+
+    W --> BW --> EXE
+    M --> BM
+    L --> BL
+    BW & BM & BL --> R --> EXE
+    EXE --> PKG
+```
+
 ---
 
-## Building
+<a id="building"></a>
 
-### Windows
+## 🔨 Building
+
+<details>
+<summary>🪟 <strong>Windows</strong> — C# / .NET 10 / WPF</summary>
 
 **Requirements:** .NET 10 SDK, Windows 10 22H2+
 
@@ -74,10 +136,17 @@ dotnet build windows/QuadClicker.csproj -c Release
 dotnet test windows/Tests/QuadClicker.Tests.csproj
 
 # Publish self-contained single-file (matches release.yml)
-dotnet publish windows/QuadClicker.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -o artifacts/windows
+dotnet publish windows/QuadClicker.csproj -c Release -r win-x64 --self-contained true \
+  -p:PublishSingleFile=true \
+  -p:IncludeNativeLibrariesForSelfExtract=true \
+  -p:EnableCompressionInSingleFile=true \
+  -o artifacts/windows
 ```
 
-### macOS
+</details>
+
+<details>
+<summary>🍎 <strong>macOS</strong> — Swift / SwiftUI</summary>
 
 **Requirements:** Xcode 15+, macOS 13+, Apple Developer account (for signing/notarization)
 
@@ -97,13 +166,18 @@ xcodebuild test -project macos/QuadClicker.xcodeproj \
                 -destination 'platform=macOS'
 ```
 
-> **Note:** `CGEventPost` and global hotkeys require Accessibility permission. The app prompts on first launch when hotkeys are configured. Code signing and notarization are required for distribution — see `CODE_SIGNING.md`.
+> [!WARNING]
+> `CGEventPost` and global hotkeys require **Accessibility permission**. The app prompts on first launch when hotkeys are configured. Code signing and notarization are required for distribution — see `CODE_SIGNING.md`.
 
-### Linux
+</details>
+
+<details>
+<summary>🐧 <strong>Linux</strong> — C++ / Qt6 / CMake</summary>
 
 **Requirements:** Qt 6.2+, CMake 3.20+, GCC 11+ or Clang 13+, libXtst, libXss, libX11
 
-**Verified:** Ubuntu 24.04 LTS (Qt 6.4.2, GCC 13.3) — including under WSL2 with WSLg.
+> [!NOTE]
+> **Verified:** Ubuntu 24.04 LTS (Qt 6.4.2, GCC 13.3) — including under WSL2 with WSLg.
 
 ```bash
 # Install dependencies (Ubuntu/Debian)
@@ -122,9 +196,13 @@ ctest --test-dir build --output-on-failure
 sudo cmake --install build
 ```
 
+</details>
+
 ---
 
-## CLI Reference
+<a id="cli-reference"></a>
+
+## 💻 CLI Reference
 
 When any argument other than `--minimized`, `--no-update-check`, or `--post-update` is passed, the app runs headless with no GUI. See the [wiki CLI Reference](https://github.com/Quadstronaut/QuadClicker/wiki/CLI-Reference) for the full flag table and examples.
 
@@ -132,9 +210,12 @@ When any argument other than `--minimized`, `--no-update-check`, or `--post-upda
 quadclicker [OPTIONS]
 ```
 
+<details>
+<summary>📋 <strong>Full flag table</strong></summary>
+
 | Argument | Type | Default | Description |
-|---|---|---|---|
-| `--rate <value>` | string | required | Click rate. Formats: `100ms` · `5s` · `2min` · `10/s` · `600/min` · `60/h` (1 ms – 360 min) |
+|:---|:---|:---|:---|
+| `--rate <value>` | string | **required** | Click rate. Formats: `100ms` · `5s` · `2min` · `10/s` · `600/min` · `60/h` (1 ms – 360 min) |
 | `--button <left\|right\|middle>` | enum | `left` | Mouse button |
 | `--type <single\|double>` | enum | `single` | Click type |
 | `--location <x,y>` | int pair | cursor | Fixed screen coordinate |
@@ -148,7 +229,9 @@ quadclicker [OPTIONS]
 | `--version` | flag | — | Print version and exit 0 |
 | `--help` | flag | — | Print usage and exit 0 |
 
-**Exit codes:** `0` success · `1` invalid argument · `2` runtime error · `130` Ctrl+C
+</details>
+
+**Exit codes:** `0` success · `1` invalid argument · `2` runtime error · `130` <kbd>Ctrl</kbd>+<kbd>C</kbd>
 
 **Examples:**
 
@@ -177,12 +260,17 @@ quadclicker --minimized
 
 ---
 
-## Design System
+<a id="design-system"></a>
+
+## 🎨 Design System
 
 The Windows app ships the **Taneth** palette: a deep-green hull background with a warm gold HUD accent. macOS and Linux still ship the original emerald-green tokens in source — porting the new palette is tracked under the Phase 2/3 follow-ups.
 
+<details>
+<summary>🖌️ <strong>Full Taneth token table (Windows)</strong></summary>
+
 | Token | Value | Usage |
-|---|---|---|
+|:---|:---|:---|
 | Accent | `#E8B547` | Start button, focus rings, active status (gold) |
 | Accent Hover | `#F5C75A` | Hover on accent elements |
 | Accent Pressed | `#B88A2A` | Pressed state |
@@ -198,56 +286,68 @@ The Windows app ships the **Taneth** palette: a deep-green hull background with 
 | Text Disabled | `#3D5048` | Disabled text |
 | Status Waiting | `#5BA89A` | Idle wait indicator |
 
+</details>
+
 ---
 
-## Settings
+<a id="settings"></a>
+
+## ⚙️ Settings
 
 Settings are persisted automatically on exit and loaded on launch. JSON format is identical across platforms for cross-platform compatibility.
 
-| Platform | Path |
-|---|---|
-| Windows | `%APPDATA%\QuadClicker\settings.json` |
-| macOS | `~/Library/Application Support/QuadClicker/settings.json` |
-| Linux | `~/.config/quadclicker/settings.json` |
+| Platform | Settings Path |
+|:---|:---|
+| 🪟 Windows | `%APPDATA%\QuadClicker\settings.json` |
+| 🍎 macOS | `~/Library/Application Support/QuadClicker/settings.json` |
+| 🐧 Linux | `~/.config/quadclicker/settings.json` |
 
 ---
 
-## Phase Status
+<a id="phase-status"></a>
+
+## 🚦 Phase Status
 
 | Phase | Description | Status |
-|---|---|---|
+|:---:|:---|:---:|
 | 0 | Monorepo restructure + CI/CD skeleton | ✅ Done |
 | 1 | Windows WPF — shipped at **v0.1.1** as a single-file EXE; version label visible bottom-right of the window, tray tooltip "QuadClicker - now with 4x the clicks" | ✅ Done |
 | 2 | macOS SwiftUI — code-complete, **unverified** (never compiled or run; `build-macos.yml` is a no-op placeholder) | 🔨 Pending Mac + Xcode |
 | 3 | Linux Qt6/C++ — **build verified** on Ubuntu 24.04 (Qt 6.4.2) under WSL2/WSLg: clean compile, all unit tests pass, CLI happy + parse-error paths exercised, GUI launches and renders. CI (`build-linux.yml`) now runs the real build. No `.deb` / AppImage published yet. | ✅ Built + tested |
 
-### Known limitations
+### ⚠️ Known Limitations
 
-- The mode-based **Click Rate** redesign and the **Taneth** palette are now in all three platforms' source. Linux is verified end-to-end; macOS source has them but remains unbuilt pending an Xcode-equipped machine.
-- Linux global hotkeys: `XGrabKey` (X11) is used. Under Wayland, hotkeys are **not supported** — the `HotkeyManager` detects the Wayland platform at startup and disables itself entirely. Use the Start/Stop button or the system tray instead. A compositor-side D-Bus shortcut API is a future milestone.
+> [!WARNING]
+> **Linux Wayland:** Global hotkeys are **not supported** under Wayland. `XGrabKey` (X11) is used; the `HotkeyManager` detects the Wayland platform at startup and disables itself entirely. Use the Start/Stop button or the system tray instead. A compositor-side D-Bus shortcut API is a future milestone.
+
+> [!NOTE]
+> The mode-based **Click Rate** redesign and the **Taneth** palette are now in all three platforms' source. Linux is verified end-to-end; macOS source has them but remains unbuilt pending an Xcode-equipped machine.
 
 ---
 
-## Releases / Downloads
+<a id="releases--downloads"></a>
+
+## 📦 Releases / Downloads
 
 Latest builds are published on GitHub Releases:
 
 **[github.com/Quadstronaut/QuadClicker/releases/latest](https://github.com/Quadstronaut/QuadClicker/releases/latest)**
 
-| Platform | Status | Notes |
-|---|---|---|
-| Windows x64 | `QuadClicker.exe` (v0.1.1) | Self-contained single-file EXE — **no .NET install required**. Download and run. |
-| macOS | Not yet released | Phase 2 build is unverified; no signed/notarized artifact yet. |
-| Linux | Not yet released | Build verified on Ubuntu 24.04 (Qt 6.4.2). No signed `.deb` / `.rpm` / AppImage published yet — packaging is the next step. |
+| Platform | Artifact | Status | Notes |
+|:---|:---|:---:|:---|
+| 🪟 Windows x64 | `QuadClicker.exe` (v0.1.1) | ✅ Available | Self-contained single-file EXE — **no .NET install required**. Download and run. |
+| 🍎 macOS | — | ⏳ Not yet released | Phase 2 build is unverified; no signed/notarized artifact yet. |
+| 🐧 Linux | — | ⏳ Not yet released | Build verified on Ubuntu 24.04 (Qt 6.4.2). No signed `.deb` / `.rpm` / AppImage published yet — packaging is the next step. |
 
-The Windows binary is currently **unsigned** — Windows SmartScreen will warn on first launch until an Authenticode certificate is in place (see `CODE_SIGNING.md`).
+> [!CAUTION]
+> The Windows binary is currently **unsigned** — Windows SmartScreen will warn on first launch until an Authenticode certificate is in place (see `CODE_SIGNING.md`).
 
-### Distribution channels (in flight)
+### 📬 Distribution Channels (in flight)
 
 QuadClicker is being prepared for distribution through every major package manager. Manifests for these are already in the repo and pinned at v0.1.1:
 
 | Channel | Manifest | Install command (once published) |
-|---|---|---|
+|:---|:---|:---|
 | Chocolatey (Windows) | `Chocolatey/quadclicker.nuspec` | `choco install quadclicker` |
 | Scoop (Windows) | `Scoop/quadclicker.json` | `scoop install quadclicker` |
 | winget (Windows) | _planned_ | `winget install Quadstronaut.QuadClicker` |
@@ -256,30 +356,47 @@ QuadClicker is being prepared for distribution through every major package manag
 
 ---
 
-## Contributing
+<a id="contributing"></a>
+
+## 🤝 Contributing
 
 1. Fork the repo
 2. Create a feature branch (`git checkout -b feature/my-feature`)
 3. Commit your changes
 4. Push and open a Pull Request
 
-Please open an issue first for major changes.
+> [!TIP]
+> Please open an issue first for major changes.
 
 ---
 
-## License
+<a id="license"></a>
+
+## 📄 License
 
 Copyright © 2026 Kyle Green / Quadstronaut.
 Licensed under the [MIT License](LICENSE) with an attribution clause: redistributions must retain credit to Kyle Green (Quadstronaut) and link back to [github.com/Quadstronaut/QuadClicker](https://github.com/Quadstronaut/QuadClicker).
 
 ---
 
-## Author
+<a id="author"></a>
+
+## 👤 Author
 
 **Kyle Green (Quadstronaut)** — [github.com/Quadstronaut/QuadClicker](https://github.com/Quadstronaut/QuadClicker)
 
 ---
 
-## Acknowledgements
+<a id="acknowledgements"></a>
+
+## 🙏 Acknowledgements
 
 Inspired by [Autoclick by Mahdi Bchatnia](https://mahdi.jp/apps/autoclick) (2011–2021, GNU GPLv2)
+
+---
+
+<div align="center">
+
+[![Back to Top](https://img.shields.io/badge/Back_to_Top-0A1410?style=for-the-badge&logo=arrow-up&logoColor=E8B547)](#top)
+
+</div>
