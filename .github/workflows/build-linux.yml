@@ -33,7 +33,7 @@ jobs:
         run: ctest --test-dir build --output-on-failure
 
       - name: Upload binary artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: quadclicker-linux-x64
           path: build/quadclicker

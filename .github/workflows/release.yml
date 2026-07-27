@@ -22,7 +22,7 @@ jobs:
              -p:IncludeNativeLibrariesForSelfExtract=true
              -p:EnableCompressionInSingleFile=true
              -o artifacts/windows
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: QuadClicker-win-x64
           path: artifacts/windows/
@@ -50,7 +50,7 @@ jobs:
           fi
 
       - name: Download Windows artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: QuadClicker-win-x64
           path: release/windows
