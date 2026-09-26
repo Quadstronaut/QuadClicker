@@ -374,8 +374,8 @@ QuadClicker is being prepared for distribution through every major package manag
 
 ## 📄 License
 
-Copyright © 2026 Quadstronaut / Quadstronaut.
-Licensed under the [MIT License](LICENSE) with an attribution clause: redistributions must retain credit to Quadstronaut (Quadstronaut) and link back to [github.com/Quadstronaut/QuadClicker](https://github.com/Quadstronaut/QuadClicker).
+Copyright © 2026 Quadstronaut.
+Licensed under the [MIT License](LICENSE).
 
 ---
 
@@ -383,7 +383,7 @@ Licensed under the [MIT License](LICENSE) with an attribution clause: redistribu
 
 ## 👤 Author
 
-**Quadstronaut (Quadstronaut)** — [github.com/Quadstronaut/QuadClicker](https://github.com/Quadstronaut/QuadClicker)
+**Quadstronaut** — [github.com/Quadstronaut/QuadClicker](https://github.com/Quadstronaut/QuadClicker)
 
 ---
 

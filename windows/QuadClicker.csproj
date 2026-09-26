@@ -12,7 +12,7 @@
     <AssemblyName>QuadClicker</AssemblyName>
     <RootNamespace>QuadClicker</RootNamespace>
     <Product>QuadClicker</Product>
-    <Copyright>Copyright © 2026 Quadstronaut (Quadstronaut)</Copyright>
+    <Copyright>Copyright © 2026 Quadstronaut</Copyright>
     <Version>0.2.0</Version>
     <FileVersion>0.2.0.0</FileVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

@@ -1,6 +1,6 @@
 # Code Signing Guide — QuadClicker
 
-**Author:** Quadstronaut (Quadstronaut)
+**Author:** Quadstronaut
 **Last updated:** 2026-03-23
 
 This document details the steps required to code-sign QuadClicker binaries on all three platforms. Code signing is required to:
@@ -341,7 +341,7 @@ gpg --default-key YOUR_KEY_ID --clearsign -o InRelease Release
 
 ---
 
-## Notes for Quadstronaut
+## Additional Notes
 
 - **macOS Accessibility:** CGEventPost requires Accessibility permission. Apple does NOT allow this in the Mac App Store — QuadClicker must be distributed outside the store (direct DMG or Homebrew cask). This is by design.
 - **Windows EV USB token:** EV certs require the physical USB token to be present for signing. For CI/CD, Azure Trusted Signing is the modern alternative — highly recommended.
