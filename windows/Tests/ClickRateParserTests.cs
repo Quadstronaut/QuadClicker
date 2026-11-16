@@ -27,6 +27,24 @@ public sealed class ClickRateParserTests
     }
 
     [Theory]
+    [InlineData("1,5s")]      // comma decimal: used to parse as 15 s (NumberStyles.Any)
+    [InlineData("1,5")]
+    [InlineData("1,000ms")]
+    [InlineData("(5)ms")]
+    public void GroupSeparatorsAndParentheses_AreRejected(string input)
+    {
+        Assert.False(ClickRateParser.TryParse(input, out _, out string err));
+        Assert.NotEmpty(err);
+    }
+
+    [Fact]
+    public void DotDecimal_StillParses()
+    {
+        Assert.True(ClickRateParser.TryParse("1.5s", out var delay, out _));
+        Assert.Equal(1500, delay.TotalMilliseconds, precision: 0);
+    }
+
+    [Theory]
     [InlineData("10/s",               100)]
     [InlineData("1/s",                1000)]
     [InlineData("100/s",              10)]

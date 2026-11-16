@@ -46,6 +46,15 @@ internal static class CliEntryPoint
         using var cts = new CancellationTokenSource();
         Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
 
+        return RunSession(session, cts);
+    }
+
+    /// <summary>
+    /// Runs one headless session and maps the outcome to the documented exit code.
+    /// Internal so tests can drive it with an already-cancelled source (no clicks).
+    /// </summary>
+    internal static int RunSession(ClickSession session, CancellationTokenSource cts)
+    {
         var engine = new ClickEngine();
         int lastCount = 0;
         engine.ClickCountUpdated += count =>
@@ -62,6 +71,13 @@ internal static class CliEntryPoint
         try
         {
             engine.RunAsync(session, cts.Token).GetAwaiter().GetResult();
+            // The engine returns normally when cancelled, so check the source:
+            // Ctrl+C must exit 130 as documented, not 0.
+            if (cts.IsCancellationRequested)
+            {
+                Console.WriteLine($"\nStopped. Total clicks: {lastCount}");
+                return 130;
+            }
             Console.WriteLine($"\nDone. Total clicks: {lastCount}");
             return 0;
         }
@@ -77,7 +93,7 @@ internal static class CliEntryPoint
         }
     }
 
-    private static bool TryParseArgs(string[] args, out ClickSession? session, out string error)
+    internal static bool TryParseArgs(string[] args, out ClickSession? session, out string error)
     {
         session = null;
         error   = string.Empty;
@@ -130,7 +146,10 @@ internal static class CliEntryPoint
                 case "--type":
                 {
                     if (!TryNext(out var val)) { error = $"Missing value after '{arg}'"; return false; }
-                    clickType = val.ToLower() == "double" ? Models.ClickType.Double : Models.ClickType.Single;
+                    string type = val.ToLowerInvariant();
+                    if (type is not ("single" or "double"))
+                    { error = $"Unknown click type '{val}'. Use: single, double."; return false; }
+                    clickType = type == "double" ? Models.ClickType.Double : Models.ClickType.Single;
                     break;
                 }
                 case "--location":
@@ -147,22 +166,23 @@ internal static class CliEntryPoint
                 case "--stop-after-clicks":
                 {
                     if (!TryNext(out var val)) { error = $"Missing value after '{arg}'"; return false; }
-                    if (!int.TryParse(val, out stopClicks))
-                    { error = "--stop-after-clicks must be an integer."; return false; }
+                    // A negative limit would silently mean "unlimited" in the engine.
+                    if (!int.TryParse(val, NumberStyles.Integer, CultureInfo.InvariantCulture, out stopClicks) || stopClicks < 0)
+                    { error = "--stop-after-clicks must be a non-negative integer."; return false; }
                     break;
                 }
                 case "--stop-after-seconds":
                 {
                     if (!TryNext(out var val)) { error = $"Missing value after '{arg}'"; return false; }
-                    if (!double.TryParse(val, NumberStyles.Any, CultureInfo.InvariantCulture, out stopSeconds))
-                    { error = "--stop-after-seconds must be a number."; return false; }
+                    if (!TryParseNonNegative(val, out stopSeconds))
+                    { error = "--stop-after-seconds must be a non-negative number."; return false; }
                     break;
                 }
                 case "--idle-wait":
                 {
                     if (!TryNext(out var val)) { error = $"Missing value after '{arg}'"; return false; }
-                    if (!double.TryParse(val, NumberStyles.Any, CultureInfo.InvariantCulture, out idleWait))
-                    { error = "--idle-wait must be a number."; return false; }
+                    if (!TryParseNonNegative(val, out idleWait))
+                    { error = "--idle-wait must be a non-negative number."; return false; }
                     break;
                 }
                 case "--no-gui":
@@ -188,6 +208,12 @@ internal static class CliEntryPoint
                                    stopClicks, stopSeconds, idleWait);
         return true;
     }
+
+    // Finite and >= 0. NaN/Infinity/negatives would make the engine's "> 0" checks
+    // silently disable the limit. Float (not Any) so "1,5" is rejected, not read as 15.
+    private static bool TryParseNonNegative(string s, out double value) =>
+        double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out value)
+        && double.IsFinite(value) && value >= 0;
 
     private static int RunCheckUpdate()
     {
@@ -222,9 +248,9 @@ internal static class CliEntryPoint
           --button <left|right|middle> Mouse button to click (default: left)
           --type <single|double>       Click type (default: single)
           --location <x,y>             Fixed screen coordinate (default: current cursor)
-          --stop-after-clicks <n>      Stop after N clicks (0 = unlimited)
-          --stop-after-seconds <n>     Stop after N seconds (0 = unlimited)
-          --idle-wait <n>              Wait for N seconds of system idle before starting
+          --stop-after-clicks <n>      Stop after N clicks, N >= 0 (0 = unlimited)
+          --stop-after-seconds <n>     Stop after N seconds, N >= 0 (0 = unlimited)
+          --idle-wait <n>              Wait for N seconds of system idle before starting (N >= 0)
           --no-gui                     Force headless mode
           --minimized                  Launch GUI minimized to tray
           --no-update-check            Disable the launch-time GitHub update check (GUI only)

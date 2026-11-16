@@ -97,6 +97,38 @@ public sealed class UpdaterTests
     }
 
     [Fact]
+    public void BuildStagingScript_OnFailure_RelaunchesOldExeAndLogs()
+    {
+        string script = Updater.BuildStagingScript(1, @"C:\T\QuadClicker-0.3.0.exe", @"C:\A\QuadClicker.exe", "0.3.0");
+        string catchBlock = Between(script, "} catch {", "} finally {");
+
+        // Relaunch the existing target, but only once the old process is gone.
+        Assert.Contains("Start-Process -FilePath $target", catchBlock);
+        Assert.Contains("-not (Get-Process -Id $pidToWait", catchBlock);
+        Assert.Contains("Test-Path -LiteralPath $target", catchBlock);
+        Assert.Contains("update.log", catchBlock);
+        // The success path must not pass --post-update on the failure relaunch.
+        Assert.DoesNotContain("--post-update", catchBlock);
+    }
+
+    [Fact]
+    public void BuildStagingScript_Finally_RemovesStagedExe()
+    {
+        string script = Updater.BuildStagingScript(1, @"C:\T\QuadClicker-0.3.0.exe", @"C:\A\QuadClicker.exe", "0.3.0");
+        string finallyBlock = script[script.IndexOf("} finally {", StringComparison.Ordinal)..];
+        Assert.Contains("Remove-Item -LiteralPath $source", finallyBlock);
+        Assert.Contains("Remove-Item -LiteralPath $MyInvocation.MyCommand.Path", finallyBlock);
+    }
+
+    private static string Between(string s, string start, string end)
+    {
+        int a = s.IndexOf(start, StringComparison.Ordinal);
+        int b = s.IndexOf(end, a, StringComparison.Ordinal);
+        Assert.True(a >= 0 && b > a, $"markers '{start}'..'{end}' not found");
+        return s[a..b];
+    }
+
+    [Fact]
     public void BuildStagingScript_HasErrorActionAndCleanup()
     {
         string script = Updater.BuildStagingScript(1, @"a", @"b", "0.2.0");

@@ -8,6 +8,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 // Disambiguate: System.Windows.Input also has a MouseButton enum
 using QcMouseButton = QuadClicker.Models.MouseButton;
 using QcClickType   = QuadClicker.Models.ClickType;
@@ -17,11 +18,20 @@ namespace QuadClicker;
 public partial class MainWindow : Window
 {
     // ── State ─────────────────────────────────────────────────────────────────
-    private CancellationTokenSource? _cts;
+    // One ClickRun per Start press. Identity matters: callbacks and cleanup from an
+    // older run that is still winding down must never touch a newer run's state.
+    private sealed class ClickRun
+    {
+        public readonly CancellationTokenSource Cts = new();
+        public readonly ClickEngine Engine = new();
+        public int LatestCount;    // written by the engine thread, read by the UI thread
+        public int RefreshQueued;  // 1 while a click-count refresh is waiting in the dispatcher
+    }
+
+    private ClickRun? _run;
     private bool _isClicking;
 
     // ── Core services ─────────────────────────────────────────────────────────
-    private readonly ClickEngine    _engine    = new();
     private readonly LocationPicker _picker    = new();
     private readonly TrayManager    _tray      = new();
     private HotkeyManager?          _hotkeys;
@@ -63,13 +73,19 @@ public partial class MainWindow : Window
         VersionLabel.Text = "v" + (Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "?");
         _picker.LocationPicked  += OnLocationPicked;
         _picker.PickCancelled   += OnPickCancelled;
-        _engine.ClickCountUpdated += OnClickCountUpdated;
-        _engine.StatusChanged     += OnEngineStatusChanged;
 
         _tray.ShowWindowRequested     += RestoreFromTray;
         _tray.ToggleClickingRequested += () => Dispatcher.Invoke(StartStopBtn_Click, null!, null!);
         _tray.QuitRequested           += () => Dispatcher.Invoke(Quit);
         _tray.Show();
+
+        // --minimized: Program.cs sets this flag. Start minimized, then hide once the
+        // window is loaded so only the tray icon remains (same state as minimizing by hand).
+        if (Application.Current.Properties.Contains("StartMinimized"))
+        {
+            WindowState = WindowState.Minimized;
+            Loaded += (_, _) => Dispatcher.BeginInvoke(DispatcherPriority.Loaded, Hide);
+        }
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -222,35 +238,53 @@ public partial class MainWindow : Window
             return;
         }
 
+        var run = new ClickRun();
+        run.Engine.ClickCountUpdated += count => OnClickCountUpdated(run, count);
+        run.Engine.StatusChanged     += status => OnEngineStatusChanged(run, status);
+
+        _run = run;
         _isClicking = true;
         SetButtonState(isClicking: true);
-        _cts = new CancellationTokenSource();
         _tray.SetActiveState(true);
 
+        // This async void method resumes on the UI thread after the await, so the
+        // code below needs no Dispatcher hop.
         try
         {
-            await _engine.RunAsync(session!, _cts.Token);
+            await run.Engine.RunAsync(session!, run.Cts.Token);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
         {
-            Dispatcher.Invoke(() => ShowError($"Error: {ex.Message}"));
+            if (_run == run) ShowError($"Error: {ex.Message}");
         }
         finally
         {
-            Dispatcher.Invoke(() =>
+            // Only the run that is still current may reset the UI. A run that was
+            // stopped (or replaced by a newer Start) already had its UI reset by
+            // StopClicking, and must not cancel or reset its successor.
+            if (_run == run)
             {
-                StopClicking();
+                EndRun();
                 SetStatus(EngineStatus.Stopped);
-            });
+            }
+            // Dispose only now: the engine thread has finished using the token's WaitHandle.
+            run.Cts.Dispose();
         }
     }
 
     private void StopClicking()
     {
-        _cts?.Cancel();
-        _cts?.Dispose();
-        _cts = null;
+        // Cancel but do NOT dispose: the engine thread may still be between waits and
+        // about to touch token.WaitHandle. The run disposes its own source when it ends.
+        _run?.Cts.Cancel();
+        EndRun();
+        SetStatus(EngineStatus.Stopped);
+    }
+
+    private void EndRun()
+    {
+        _run = null;
         _isClicking = false;
         SetButtonState(isClicking: false);
         _tray.SetActiveState(false);
@@ -290,13 +324,18 @@ public partial class MainWindow : Window
             return;
         }
 
+        // WPF reports F10 and every Alt+<key> chord as Key.System; the real key is
+        // in SystemKey. Without this, F10 (the default stop key) and Alt chords
+        // could never be captured.
+        var key = e.Key == Key.System ? e.SystemKey : e.Key;
+
         // Ignore lone modifier keys
-        if (e.Key is Key.LeftShift or Key.RightShift or Key.LeftCtrl or Key.RightCtrl
-                  or Key.LeftAlt  or Key.RightAlt  or Key.LWin or Key.RWin or Key.System)
+        if (key is Key.LeftShift or Key.RightShift or Key.LeftCtrl or Key.RightCtrl
+                or Key.LeftAlt  or Key.RightAlt  or Key.LWin or Key.RWin or Key.System)
             return;
 
         var modifiers = Keyboard.Modifiers;
-        string text = BuildHotkeyText(e.Key, modifiers);
+        string text = BuildHotkeyText(key, modifiers);
 
         // Prevent both boxes having the same hotkey
         bool isSameAsOther = _capturingHotkeyBox == StartHotkeyBox
@@ -342,18 +381,29 @@ public partial class MainWindow : Window
 
     // ── Engine callbacks ──────────────────────────────────────────────────────
 
-    private void OnClickCountUpdated(int count)
+    // Called on the engine thread once per click. Never blocks: it records the
+    // latest count and queues at most one label refresh. Background priority keeps
+    // the refresh below input, so a fast click rate cannot starve the Stop button.
+    private void OnClickCountUpdated(ClickRun run, int count)
     {
-        Dispatcher.Invoke(() =>
+        Volatile.Write(ref run.LatestCount, count);
+        if (Interlocked.Exchange(ref run.RefreshQueued, 1) == 1) return;
+
+        Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
         {
+            Interlocked.Exchange(ref run.RefreshQueued, 0);
+            if (_run != run) return; // stale run: its UI was already reset
             ClickCountLabel.Visibility = Visibility.Visible;
-            ClickCountLabel.Text = $"Clicks: {count}";
+            ClickCountLabel.Text = $"Clicks: {Volatile.Read(ref run.LatestCount)}";
         });
     }
 
-    private void OnEngineStatusChanged(EngineStatus status)
+    private void OnEngineStatusChanged(ClickRun run, EngineStatus status)
     {
-        Dispatcher.Invoke(() => SetStatus(status));
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (_run == run) SetStatus(status);
+        });
     }
 
     private void OnLocationPicked(int x, int y)
@@ -386,10 +436,11 @@ public partial class MainWindow : Window
         if (!int.TryParse(StopClicksBox.Text, out int stopClicks) || stopClicks < 0)
         { error = "Stop after (clicks) must be a non-negative integer."; return false; }
 
-        if (!double.TryParse(StopSecondsBox.Text, out double stopSeconds) || stopSeconds < 0)
+        // IsFinite: "NaN" parses, and NaN < 0 is false, which silently disabled the limit.
+        if (!double.TryParse(StopSecondsBox.Text, out double stopSeconds) || !double.IsFinite(stopSeconds) || stopSeconds < 0)
         { error = "Stop after (seconds) must be a non-negative number."; return false; }
 
-        if (!double.TryParse(IdleBox.Text, out double idleWait) || idleWait < 0)
+        if (!double.TryParse(IdleBox.Text, out double idleWait) || !double.IsFinite(idleWait) || idleWait < 0)
         { error = "Idle wait must be a non-negative number."; return false; }
 
         bool useCurrentPos = LocCurrent.IsChecked == true;
@@ -424,14 +475,21 @@ public partial class MainWindow : Window
         {
             _startHotkeyId = _hotkeys.Register(smod, svk, () =>
                 Dispatcher.Invoke(() => { if (!_isClicking) StartClicking(); }));
+            if (_startHotkeyId < 0) ShowHotkeyUnavailable(StartHotkeyBox.Text);
         }
 
         if (TryParseHotkeyText(StopHotkeyBox.Text, out uint emod, out uint evk))
         {
             _stopHotkeyId = _hotkeys.Register(emod, evk, () =>
                 Dispatcher.Invoke(() => { if (_isClicking) StopClicking(); }));
+            if (_stopHotkeyId < 0) ShowHotkeyUnavailable(StopHotkeyBox.Text);
         }
     }
+
+    // RegisterHotKey fails when another app already owns the chord. Say so instead
+    // of leaving a hotkey in the box that silently does nothing.
+    private void ShowHotkeyUnavailable(string text) =>
+        ShowError($"Hotkey {text} is already in use by another app. Pick a different key.");
 
     private static string BuildHotkeyText(Key key, ModifierKeys mods)
     {
@@ -719,8 +777,10 @@ public partial class MainWindow : Window
         _hotkeys?.Dispose();
         _picker.Dispose();
         _tray.Dispose();
-        _cts?.Cancel();
-        _cts?.Dispose();
+        // Cancel and forget the run. Its own finally disposes the token source, and
+        // because _run is null it will not touch the (now disposed) tray or UI.
+        _run?.Cts.Cancel();
+        _run = null;
         base.OnClosed(e);
     }
 }

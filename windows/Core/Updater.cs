@@ -126,9 +126,21 @@ public static class Updater
         sb.AppendLine("    Copy-Item -LiteralPath $source -Destination $target -Force");
         sb.AppendLine("    Start-Process -FilePath $target -ArgumentList @('--post-update', $version)");
         sb.AppendLine("} catch {");
-        sb.AppendLine("    # Fail silently — user still has the old binary");
+        // The app already shut down for the update. If the swap failed (target not
+        // writable, file locked, ...) bring the OLD exe back instead of leaving the
+        // user with nothing running, and record why next to the staged files.
+        sb.AppendLine("    try {");
+        sb.AppendLine("        $log = Join-Path (Split-Path -Parent $source) 'update.log'");
+        sb.AppendLine("        Add-Content -LiteralPath $log -Value (\"[{0:u}] Update to v{1} failed: {2}\" -f (Get-Date), $version, $_)");
+        sb.AppendLine("    } catch { }");
+        sb.AppendLine("    # Relaunch only if the old process is really gone (a PID-wait timeout means it is still running).");
+        sb.AppendLine("    if ((-not (Get-Process -Id $pidToWait -ErrorAction SilentlyContinue)) -and (Test-Path -LiteralPath $target)) {");
+        sb.AppendLine("        Start-Process -FilePath $target");
+        sb.AppendLine("    }");
         sb.AppendLine("} finally {");
         sb.AppendLine("    Start-Sleep -Milliseconds 100");
+        // The staged copy is ~75 MB; do not leave one behind per update.
+        sb.AppendLine("    Remove-Item -LiteralPath $source -Force -ErrorAction SilentlyContinue");
         sb.AppendLine("    Remove-Item -LiteralPath $MyInvocation.MyCommand.Path -Force -ErrorAction SilentlyContinue");
         sb.AppendLine("}");
         return sb.ToString();

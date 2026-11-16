@@ -129,8 +129,10 @@ public static class ClickRateParser
         return true;
     }
 
+    // NumberStyles.Float, not Any: Any allows thousands separators, so a comma
+    // decimal like "1,5" silently parsed as 15. Float rejects it with an error.
     private static bool TryParsePositive(string s, out double value) =>
-        double.TryParse(s.Trim(), NumberStyles.Any, CultureInfo.InvariantCulture, out value) && value > 0;
+        double.TryParse(s.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out value) && value > 0;
 
     private static string StripSuffix(string text, string suffix) =>
         text.EndsWith(suffix) ? text[..^suffix.Length].Trim() : text.Trim();

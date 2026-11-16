@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using QuadClicker.Models;
 using QuadClicker.PInvoke;
 
@@ -39,14 +40,17 @@ public sealed class ClickEngine
         }
 
         StatusChanged?.Invoke(EngineStatus.Clicking);
-        var startTime = DateTime.UtcNow;
+
+        // Stopwatch is monotonic: wall-clock changes (NTP, manual) cannot stretch
+        // or cut the stop-after-seconds limit.
+        var clock    = Stopwatch.StartNew();
+        var deadline = TimeSpan.Zero; // the first click is due immediately
 
         while (!token.IsCancellationRequested)
         {
             // ── Stop conditions ───────────────────────────────────────────────
-            if (session.StopAfterClicks > 0 && clicks >= session.StopAfterClicks) break;
-            if (session.StopAfterSeconds > 0 &&
-                (DateTime.UtcNow - startTime).TotalSeconds >= session.StopAfterSeconds) break;
+            if (ClickTiming.LimitReached(clicks, session.StopAfterClicks, clock.Elapsed, session.StopAfterSeconds))
+                break;
 
             // ── Position ──────────────────────────────────────────────────────
             if (!session.UseCurrentPosition)
@@ -56,9 +60,16 @@ public sealed class ClickEngine
             InputInjector.Click(session.Button, session.ClickType, token);
             ClickCountUpdated?.Invoke(++clicks);
 
+            // Finish as soon as the last allowed click is sent, not one period later.
+            if (ClickTiming.LimitReached(clicks, session.StopAfterClicks, clock.Elapsed, session.StopAfterSeconds))
+                break;
+
             // ── Delay ─────────────────────────────────────────────────────────
-            if (session.ClickRate.TotalMilliseconds >= 1)
-                token.WaitHandle.WaitOne((int)session.ClickRate.TotalMilliseconds);
+            // Wait for the next grid deadline, capped at the stop-after-seconds limit.
+            deadline = ClickTiming.NextDeadline(deadline, session.ClickRate, clock.Elapsed);
+            int waitMs = ClickTiming.WaitMs(clock.Elapsed, deadline, session.StopAfterSeconds);
+            if (waitMs > 0)
+                token.WaitHandle.WaitOne(waitMs);
         }
 
         StatusChanged?.Invoke(EngineStatus.Stopped);

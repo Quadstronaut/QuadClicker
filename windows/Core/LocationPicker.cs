@@ -68,21 +68,37 @@ internal sealed class LocationPicker : IDisposable
             Margin              = new Thickness(0, 40, 0, 0)
         };
 
+        // Span the whole virtual desktop (all monitors), not just the monitor a
+        // maximized window would land on.
         _overlay = new Window
         {
-            Background          = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0)),
-            WindowState         = WindowState.Maximized,
-            WindowStyle         = WindowStyle.None,
-            AllowsTransparency  = true,
-            Topmost             = true,
-            Cursor              = Cursors.Cross,
-            ShowInTaskbar       = false,
-            Content             = hintLabel
+            Background            = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0)),
+            WindowStartupLocation = WindowStartupLocation.Manual,
+            Left                  = SystemParameters.VirtualScreenLeft,
+            Top                   = SystemParameters.VirtualScreenTop,
+            Width                 = SystemParameters.VirtualScreenWidth,
+            Height                = SystemParameters.VirtualScreenHeight,
+            WindowStyle           = WindowStyle.None,
+            AllowsTransparency    = true,
+            Topmost               = true,
+            Cursor                = Cursors.Cross,
+            ShowInTaskbar         = false,
+            Content               = hintLabel
         };
 
         _overlay.KeyDown += (_, e) =>
         {
             if (e.Key == Key.Escape) CancelPick(owner);
+        };
+
+        // Our own pick/cancel paths clear _overlay BEFORE calling Close(). If the
+        // overlay is still current here, something else closed it (e.g. Alt+F4):
+        // treat that as a cancel so the global hook is removed and the owner restored.
+        _overlay.Closed += (sender, _) =>
+        {
+            if (!ReferenceEquals(sender, _overlay)) return;
+            _overlay = null;
+            CancelPick(owner);
         };
 
         _overlay.Show();
@@ -108,6 +124,11 @@ internal sealed class LocationPicker : IDisposable
 
     private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
     {
+        // Swallow the button-down too. Passing it on while swallowing the up left
+        // whatever window was under the cursor with a button stuck down.
+        if (nCode >= 0 && wParam == (IntPtr)NativeMethods.WM_LBUTTONDOWN)
+            return (IntPtr)1;
+
         if (nCode >= 0 && wParam == (IntPtr)NativeMethods.WM_LBUTTONUP)
         {
             Log($"HookCallback: WM_LBUTTONUP captured");
@@ -124,8 +145,7 @@ internal sealed class LocationPicker : IDisposable
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
                 Log("HookCallback: dispatcher action running, closing overlay and raising LocationPicked");
-                _overlay?.Close();
-                _overlay = null;
+                CloseOverlay();
                 LocationPicked?.Invoke(p.X, p.Y);
             });
 
@@ -143,11 +163,19 @@ internal sealed class LocationPicker : IDisposable
         }
         Application.Current.Dispatcher.Invoke(() =>
         {
-            _overlay?.Close();
-            _overlay = null;
+            CloseOverlay();
             owner.WindowState = WindowState.Normal;
             owner.Activate();
         });
+    }
+
+    // Clear the field first, then close: the overlay's Closed handler uses
+    // "still current" to tell an outside close (Alt+F4) from our own.
+    private void CloseOverlay()
+    {
+        var overlay = _overlay;
+        _overlay = null;
+        overlay?.Close();
     }
 
     private static IntPtr SetHook(NativeMethods.LowLevelMouseProc proc)
@@ -195,8 +223,7 @@ internal sealed class LocationPicker : IDisposable
 
             Application.Current?.Dispatcher.Invoke(() =>
             {
-                _overlay?.Close();
-                _overlay = null;
+                CloseOverlay();
             });
 
             _disposed = true;
