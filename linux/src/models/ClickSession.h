@@ -8,7 +8,9 @@ namespace QuadClicker {
 
 /// Immutable configuration for a single clicking session.
 struct ClickSession {
-    std::chrono::milliseconds clickRate{100};   ///< Delay between clicks
+    /// Delay between clicks. Microseconds, not milliseconds: 600/s is 1666.7 us and
+    /// must not be truncated to 1 ms (which would click at 1000/s).
+    std::chrono::microseconds clickRate{std::chrono::milliseconds(100)};
     MouseButton               button{MouseButton::Left};
     ClickType                 clickType{ClickType::Single};
     bool                      useCurrentPosition{true};
@@ -20,7 +22,7 @@ struct ClickSession {
 
     ClickSession() = default;
 
-    ClickSession(std::chrono::milliseconds clickRate_,
+    ClickSession(std::chrono::microseconds clickRate_,   // milliseconds convert implicitly
                  MouseButton               button_,
                  ClickType                 clickType_,
                  bool                      useCurrentPosition_,

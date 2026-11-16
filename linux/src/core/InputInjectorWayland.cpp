@@ -1,4 +1,5 @@
 #include "InputInjector.h"
+#include "ClickTiming.h"
 
 #include <linux/uinput.h>
 #include <fcntl.h>
@@ -71,9 +72,10 @@ public:
         sendClick(button);
 
         if (clickType == ClickType::Double && !cancel.load()) {
-            // 500ms double-click interval for Wayland (no compositor API to query this)
+            // No compositor API to query the double-click time; assume the common
+            // 400 ms default and keep the gap well inside it (see ClickTiming).
             auto deadline = std::chrono::steady_clock::now()
-                          + std::chrono::milliseconds(500);
+                          + std::chrono::milliseconds(ClickTiming::doubleClickGapMs(400));
             while (std::chrono::steady_clock::now() < deadline) {
                 if (cancel.load()) return;
                 std::this_thread::sleep_for(std::chrono::milliseconds(5));

@@ -28,13 +28,19 @@ public:
 
     /// Returns true on success; populates \p delay and leaves \p error empty.
     /// Returns false on failure; populates \p error with a human-readable message.
+    /// Full precision: use this for the delay a session actually runs with.
+    static bool tryParse(const QString& text,
+                         std::chrono::microseconds& delay,
+                         QString& error);
+
+    /// Same, rounded to the nearest millisecond (for display and existing callers).
     static bool tryParse(const QString& text,
                          std::chrono::milliseconds& delay,
                          QString& error);
 
 private:
     static bool tryParsePositive(const QString& s, double& value);
-    static bool buildDelay(double ms, std::chrono::milliseconds& delay, QString& error);
+    static bool buildDelay(double ms, std::chrono::microseconds& delay, QString& error);
     static bool endsWithAny(const QString& t, std::initializer_list<const char*> suffixes);
     static QString stripFirstSuffix(const QString& t, std::initializer_list<const char*> suffixes);
 };

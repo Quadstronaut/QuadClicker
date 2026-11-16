@@ -27,7 +27,8 @@ public:
         setCursor(Qt::CrossCursor);
 
         // Cover all screens via virtual geometry
-        QRect virt = QGuiApplication::primaryScreen()->virtualGeometry();
+        QScreen* primary = QGuiApplication::primaryScreen();
+        QRect virt = primary ? primary->virtualGeometry() : QRect(0, 0, 800, 600);
         setGeometry(virt);
 
         // Instruction label at top-centre
@@ -135,7 +136,14 @@ void LocationPicker::showOverlay()
     connect(this, &LocationPicker::locationPicked, this, restore, Qt::SingleShotConnection);
     connect(this, &LocationPicker::pickCancelled,  this, restore, Qt::SingleShotConnection);
 
-    m_overlay->showFullScreen();
+    // X11: show() keeps the all-monitor geometry set in the constructor;
+    // showFullScreen() shrank the overlay to the one monitor it was on, so points
+    // on other monitors could not be picked. Wayland does not let clients place
+    // windows, so fullscreen remains the only way to cover a screen there.
+    if (QGuiApplication::platformName() == QLatin1String("wayland"))
+        m_overlay->showFullScreen();
+    else
+        m_overlay->show();
     m_overlay->activateWindow();
     m_overlay->raise();
 }

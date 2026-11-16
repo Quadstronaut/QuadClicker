@@ -1,5 +1,6 @@
 #include "MainWindow.h"
 #include "core/ClickRateParser.h"
+#include "core/InputInjectorFactory.h"
 
 #include <QApplication>
 #include <QVBoxLayout>
@@ -186,6 +187,9 @@ MainWindow::MainWindow(QWidget* parent)
             Qt::QueuedConnection);
     connect(m_engine, &ClickEngine::finished,
             this,     &MainWindow::onEngineFinished,
+            Qt::QueuedConnection);
+    connect(m_engine, &ClickEngine::errorOccurred,
+            this,     [this](const QString& message) { showError(message); },
             Qt::QueuedConnection);
 
     // ── Picker connections ─────────────────────────────────────────────────
@@ -782,6 +786,8 @@ void MainWindow::reRegisterHotkeys()
                 if (!m_isClicking) startClicking();
             }, Qt::QueuedConnection);
         });
+        if (m_startHotkeyHandle < 0 && m_hotkeys->isSupported())
+            showHotkeyUnavailable(m_startHotkeyEdit->text());
     }
 
     unsigned int emods = 0, ekeysym = 0;
@@ -791,7 +797,16 @@ void MainWindow::reRegisterHotkeys()
                 if (m_isClicking) stopClicking();
             }, Qt::QueuedConnection);
         });
+        if (m_stopHotkeyHandle < 0 && m_hotkeys->isSupported())
+            showHotkeyUnavailable(m_stopHotkeyEdit->text());
     }
+}
+
+void MainWindow::showHotkeyUnavailable(const QString& text)
+{
+    // X11 grab refused (BadAccess: another app or the WM owns the chord).
+    showError(QStringLiteral("Hotkey %1 could not be registered (in use by another app?). "
+                             "Pick a different key.").arg(text));
 }
 
 // ── Slots ──────────────────────────────────────────────────────────────────────
@@ -834,8 +849,11 @@ void MainWindow::onEngineStatusChanged(EngineStatus status)
     setStatus(status);
 }
 
-void MainWindow::onEngineFinished()
+void MainWindow::onEngineFinished(quint64 runId)
 {
+    // A run that was stopped and replaced by a newer Start still delivers its
+    // queued finished(); acting on it would cancel the new run.
+    if (runId != m_engine->currentRunId()) return;
     stopClicking();
     setStatus(EngineStatus::Stopped);
 }
@@ -892,7 +910,7 @@ void MainWindow::restoreFromTray()
 bool MainWindow::tryBuildSession(ClickSession& session, QString& error) const
 {
     // Click rate
-    std::chrono::milliseconds delay;
+    std::chrono::microseconds delay;   // full precision (600/s = 1666.7 us)
     if (!ClickRateParser::tryParse(composeRateString(), delay, error)) return false;
 
     // Stop after clicks
@@ -919,6 +937,10 @@ bool MainWindow::tryBuildSession(ClickSession& session, QString& error) const
 
     bool useCurrent = m_locCurrent->isChecked();
     int x = 0, y = 0;
+    if (!useCurrent && !InputInjectorFactory::canMoveCursor()) {
+        error = QString::fromUtf8(InputInjectorFactory::fixedLocationUnsupportedMessage());
+        return false;
+    }
     if (!useCurrent) {
         x = m_xEdit->text().toInt(&ok);
         if (!ok) { error = QStringLiteral("X and Y coordinates must be valid integers."); return false; }
@@ -1163,7 +1185,7 @@ void MainWindow::updateRateHint()
         return;
     }
 
-    std::chrono::milliseconds delay{};
+    std::chrono::microseconds delay{};
     QString err;
     if (!ClickRateParser::tryParse(composeRateString(), delay, err)) {
         m_rateHintLabel->setText(QString());
@@ -1172,7 +1194,7 @@ void MainWindow::updateRateHint()
         return;
     }
 
-    double ms = static_cast<double>(delay.count());
+    double ms = std::chrono::duration<double, std::milli>(delay).count();
     double cps = 1000.0 / ms;
     bool isDelay = m_modeDelay && m_modeDelay->isChecked();
     bool veryFast = cps > 100.0;

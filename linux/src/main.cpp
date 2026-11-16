@@ -6,6 +6,9 @@
 #include <QPalette>
 #include <QString>
 
+// Last: Xlib's macros (Bool, Status, None...) must not leak into Qt headers.
+#include <X11/Xlib.h>
+
 /// Apply the dark Fusion palette matching the QuadClicker design system.
 static void applyDarkPalette(QApplication& app)
 {
@@ -51,6 +54,12 @@ static void applyDarkPalette(QApplication& app)
 
 int main(int argc, char* argv[])
 {
+    // Must precede every other Xlib call. HotkeyManager shares one Display between
+    // its poll thread and the UI thread, and IdleDetector/InputInjectorX11 open
+    // displays on worker threads. libX11 >= 1.8 does this itself; 1.7 (Ubuntu
+    // 22.04, the minimum supported OS) does not. Harmless on Wayland.
+    XInitThreads();
+
     // Determine mode before constructing QApplication so we can pick the
     // right application type (QCoreApplication vs QApplication).
     bool hasCliArgs   = false;

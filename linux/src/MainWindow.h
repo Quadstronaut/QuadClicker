@@ -44,7 +44,7 @@ private slots:
     void onClickCountUpdated(int count);
     void onEngineStatusChanged(QuadClicker::EngineStatus status);
     void onAlwaysOnTopChanged(bool checked);
-    void onEngineFinished();
+    void onEngineFinished(quint64 runId);
     void onTrayShowWindow();
     void onTrayToggleClicking();
     void onTrayQuit();
@@ -85,6 +85,7 @@ private:
     void setButtonState(bool isClicking);
     void setStatus(EngineStatus status);
     void showError(const QString& msg);
+    void showHotkeyUnavailable(const QString& text);
     void clearError();
 
     // ── Settings ──────────────────────────────────────────────────────────────

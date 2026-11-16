@@ -5,9 +5,31 @@
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
 
+#include <atomic>
 #include <stdexcept>
 
 namespace QuadClicker {
+
+// ── XGrabKey error trap ────────────────────────────────────────────────────────
+// XGrabKey reports a chord already grabbed by another client (WM, other app)
+// asynchronously as a BadAccess error. Unhandled, Xlib's default handler exits
+// the process; with Qt's handler it is silently ignored and the hotkey just never
+// fires. registerHotkey installs this handler around the grab + XSync so the
+// failure is detected and reported as -1 instead.
+namespace {
+std::atomic<Display*> g_trapDisplay{nullptr};
+std::atomic<bool>     g_grabFailed{false};
+XErrorHandler         g_previousHandler = nullptr;
+
+int grabErrorHandler(Display* dpy, XErrorEvent* ev)
+{
+    if (dpy == g_trapDisplay.load() && ev->error_code == BadAccess) {
+        g_grabFailed = true;
+        return 0;
+    }
+    return g_previousHandler ? g_previousHandler(dpy, ev) : 0;
+}
+} // namespace
 
 HotkeyManager::HotkeyManager(QObject* parent)
     : QObject(parent)
@@ -53,14 +75,27 @@ int HotkeyManager::registerHotkey(unsigned int modifiers, unsigned int keysym,
     const unsigned int lockMasks[] = {0, LockMask, Mod2Mask, LockMask | Mod2Mask};
 
     std::lock_guard<std::mutex> lock(m_mutex);
-    int handle = m_nextHandle++;
 
+    g_trapDisplay     = dpy;
+    g_grabFailed      = false;
+    g_previousHandler = XSetErrorHandler(grabErrorHandler);
     for (auto extra : lockMasks) {
         XGrabKey(dpy, code, modifiers | extra, root, True,
                  GrabModeAsync, GrabModeAsync);
     }
-    XFlush(dpy);
+    XSync(dpy, False);   // round-trip so any BadAccess arrives while trapped
+    XSetErrorHandler(g_previousHandler);
+    g_trapDisplay = nullptr;
 
+    if (g_grabFailed.load()) {
+        // Release whichever lock-mask variants did succeed, then report failure.
+        for (auto extra : lockMasks)
+            XUngrabKey(dpy, code, modifiers | extra, root);
+        XFlush(dpy);
+        return -1;
+    }
+
+    int handle = m_nextHandle++;
     m_hotkeys[handle] = HotkeyDef{modifiers, static_cast<unsigned int>(code), std::move(callback)};
     return handle;
 }

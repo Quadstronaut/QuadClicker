@@ -12,7 +12,7 @@ bool ClickRateParser::tryParsePositive(const QString& s, double& value)
 }
 
 bool ClickRateParser::buildDelay(double ms,
-                                  std::chrono::milliseconds& delay,
+                                  std::chrono::microseconds& delay,
                                   QString& error)
 {
     if (!std::isfinite(ms)) {
@@ -27,9 +27,20 @@ bool ClickRateParser::buildDelay(double ms,
         error = QStringLiteral("Delay exceeds maximum of 360 minutes.");
         return false;
     }
-    delay = std::chrono::milliseconds(static_cast<long long>(ms));
+    // Keep sub-millisecond precision (was static_cast to whole ms: 1.67 -> 1).
+    delay = std::chrono::microseconds(std::llround(ms * 1000.0));
     error.clear();
     return true;
+}
+
+bool ClickRateParser::tryParse(const QString& text,
+                                std::chrono::milliseconds& delay,
+                                QString& error)
+{
+    std::chrono::microseconds us{};
+    bool ok = tryParse(text, us, error);
+    delay = std::chrono::round<std::chrono::milliseconds>(us);
+    return ok;
 }
 
 bool ClickRateParser::endsWithAny(const QString& t, std::initializer_list<const char*> suffixes)
@@ -52,7 +63,7 @@ QString ClickRateParser::stripFirstSuffix(const QString& t, std::initializer_lis
 }
 
 bool ClickRateParser::tryParse(const QString& text,
-                                std::chrono::milliseconds& delay,
+                                std::chrono::microseconds& delay,
                                 QString& error)
 {
     delay = std::chrono::milliseconds(100);

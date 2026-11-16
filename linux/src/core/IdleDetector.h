@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QString>
 #include <chrono>
 
 namespace QuadClicker {
@@ -8,10 +9,16 @@ namespace QuadClicker {
 ///
 /// X11:     Uses XScreenSaverQueryInfo.
 /// Wayland: Queries org.freedesktop.ScreenSaver via D-Bus.
-/// On failure: returns 0ms (treats system as active — safe default).
+/// On failure: returns Unknown. Callers must not treat that as "0 ms idle":
+/// an idle wait would then never end.
 class IdleDetector {
 public:
+    static constexpr std::chrono::milliseconds Unknown{-1};
+
     static std::chrono::milliseconds getIdleTime();
+
+    /// User-facing explanation when getIdleTime() returns Unknown.
+    static QString unavailableMessage();
 };
 
 } // namespace QuadClicker
