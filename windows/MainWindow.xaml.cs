@@ -78,6 +78,14 @@ public partial class MainWindow : Window
         _tray.ToggleClickingRequested += () => Dispatcher.Invoke(StartStopBtn_Click, null!, null!);
         _tray.QuitRequested           += () => Dispatcher.Invoke(Quit);
         _tray.Show();
+
+        // --minimized: Program.cs sets this flag. Start minimized, then hide once the
+        // window is loaded so only the tray icon remains (same state as minimizing by hand).
+        if (Application.Current.Properties.Contains("StartMinimized"))
+        {
+            WindowState = WindowState.Minimized;
+            Loaded += (_, _) => Dispatcher.BeginInvoke(DispatcherPriority.Loaded, Hide);
+        }
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -423,10 +431,11 @@ public partial class MainWindow : Window
         if (!int.TryParse(StopClicksBox.Text, out int stopClicks) || stopClicks < 0)
         { error = "Stop after (clicks) must be a non-negative integer."; return false; }
 
-        if (!double.TryParse(StopSecondsBox.Text, out double stopSeconds) || stopSeconds < 0)
+        // IsFinite: "NaN" parses, and NaN < 0 is false, which silently disabled the limit.
+        if (!double.TryParse(StopSecondsBox.Text, out double stopSeconds) || !double.IsFinite(stopSeconds) || stopSeconds < 0)
         { error = "Stop after (seconds) must be a non-negative number."; return false; }
 
-        if (!double.TryParse(IdleBox.Text, out double idleWait) || idleWait < 0)
+        if (!double.TryParse(IdleBox.Text, out double idleWait) || !double.IsFinite(idleWait) || idleWait < 0)
         { error = "Idle wait must be a non-negative number."; return false; }
 
         bool useCurrentPos = LocCurrent.IsChecked == true;

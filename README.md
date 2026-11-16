@@ -217,11 +217,11 @@ quadclicker [OPTIONS]
 |:---|:---|:---|:---|
 | `--rate <value>` | string | **required** | Click rate. Formats: `100ms` · `5s` · `2min` · `10/s` · `600/min` · `60/h` (1 ms – 360 min) |
 | `--button <left\|right\|middle>` | enum | `left` | Mouse button |
-| `--type <single\|double>` | enum | `single` | Click type |
+| `--type <single\|double>` | enum | `single` | Click type (case-insensitive; any other value is rejected with exit code 1) |
 | `--location <x,y>` | int pair | cursor | Fixed screen coordinate |
-| `--stop-after-clicks <n>` | int | 0 (unlimited) | Stop after N clicks |
-| `--stop-after-seconds <n>` | float | 0 (unlimited) | Stop after N seconds |
-| `--idle-wait <n>` | float | 0 (disabled) | Wait for N seconds of idle before starting |
+| `--stop-after-clicks <n>` | int ≥ 0 | 0 (unlimited) | Stop after N clicks |
+| `--stop-after-seconds <n>` | float ≥ 0 | 0 (unlimited) | Stop after N seconds (decimal point, not comma; NaN/Infinity rejected) |
+| `--idle-wait <n>` | float ≥ 0 | 0 (disabled) | Wait for N seconds of idle before starting (decimal point, not comma) |
 | `--no-gui` | flag | auto | Force headless mode |
 | `--minimized` | flag | off | Launch GUI minimized to tray (GUI-compatible — does not trigger CLI mode) |
 | `--no-update-check` | flag | off | Skip the launch-time update check; GUI-compatible (Windows only) |
