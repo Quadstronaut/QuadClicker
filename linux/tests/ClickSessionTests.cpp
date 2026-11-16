@@ -27,7 +27,7 @@ private slots:
     void defaultSession_isValid()
     {
         auto s = defaultSession();
-        QCOMPARE(s.clickRate.count(), 100LL);
+        QCOMPARE(std::chrono::duration_cast<std::chrono::milliseconds>(s.clickRate).count(), 100LL);
         QCOMPARE(s.button,  MouseButton::Left);
         QCOMPARE(s.clickType, ClickType::Single);
         QVERIFY(s.useCurrentPosition);
@@ -97,7 +97,7 @@ private slots:
             30.0,
             5.0);
 
-        QCOMPARE(s.clickRate.count(),   200LL);
+        QCOMPARE(std::chrono::duration_cast<std::chrono::milliseconds>(s.clickRate).count(),   200LL);
         QCOMPARE(s.button,              MouseButton::Right);
         QCOMPARE(s.clickType,           ClickType::Double);
         QVERIFY(!s.useCurrentPosition);

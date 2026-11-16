@@ -1,4 +1,5 @@
 #include "InputInjector.h"
+#include "ClickTiming.h"
 
 #include <X11/Xlib.h>
 #include <X11/extensions/XTest.h>
@@ -36,10 +37,10 @@ public:
         sendClick(button);
 
         if (clickType == ClickType::Double && !cancel.load()) {
-            // Query the system double-click interval
-            int interval = doubleClickIntervalMs();
+            // Short gap well inside the system double-click window (see ClickTiming).
+            int gap = ClickTiming::doubleClickGapMs(doubleClickIntervalMs());
             auto deadline = std::chrono::steady_clock::now()
-                          + std::chrono::milliseconds(interval);
+                          + std::chrono::milliseconds(gap);
             while (std::chrono::steady_clock::now() < deadline) {
                 if (cancel.load()) return;
                 std::this_thread::sleep_for(std::chrono::milliseconds(5));

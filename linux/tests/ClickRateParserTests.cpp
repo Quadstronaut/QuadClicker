@@ -226,6 +226,28 @@ private slots:
         QVERIFY(!ClickRateParser::tryParse(QStringLiteral("2000/s"), delay, err));
         QVERIFY(!err.isEmpty());
     }
+
+    // ── Sub-millisecond precision (F23) ───────────────────────────────────────
+
+    void fractionalDelay_keptInMicroseconds()
+    {
+        // 600/s = 1666.67 us. It used to be truncated to 1 ms (= 1000/s).
+        std::chrono::microseconds delay{};
+        QString err;
+        QVERIFY(ClickRateParser::tryParse(QStringLiteral("600/s"), delay, err));
+        QCOMPARE(delay.count(), 1667LL);
+
+        QVERIFY(ClickRateParser::tryParse(QStringLiteral("1.5ms"), delay, err));
+        QCOMPARE(delay.count(), 1500LL);
+    }
+
+    void millisecondOverload_rounds()
+    {
+        std::chrono::milliseconds delay{};
+        QString err;
+        QVERIFY(ClickRateParser::tryParse(QStringLiteral("600/s"), delay, err));
+        QCOMPARE(delay.count(), 2LL);   // rounded, not truncated to 1
+    }
 };
 
 QTEST_MAIN(ClickRateParserTests)

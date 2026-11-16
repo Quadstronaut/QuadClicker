@@ -1,4 +1,5 @@
 #include "ClickEngine.h"
+#include "ClickTiming.h"
 #include "IdleDetector.h"
 #include "InputInjectorFactory.h"
 
@@ -77,17 +78,15 @@ void ClickEngine::loop(const ClickSession session)
 
     emit statusChanged(EngineStatus::Clicking);
 
-    auto startTime = std::chrono::steady_clock::now();
+    const auto startTime = std::chrono::steady_clock::now();
+    auto elapsedSec = [&startTime] {
+        return std::chrono::duration<double>(std::chrono::steady_clock::now() - startTime).count();
+    };
 
     while (!m_cancel.load()) {
         // ── Stop conditions ────────────────────────────────────────────────────
-        if (session.stopAfterClicks > 0 && clicks >= session.stopAfterClicks) break;
-
-        if (session.stopAfterSeconds > 0.0) {
-            auto elapsed = std::chrono::steady_clock::now() - startTime;
-            auto elapsedSec = std::chrono::duration<double>(elapsed).count();
-            if (elapsedSec >= session.stopAfterSeconds) break;
-        }
+        if (ClickTiming::limitReached(clicks, session.stopAfterClicks,
+                                      elapsedSec(), session.stopAfterSeconds)) break;
 
         // ── Position ──────────────────────────────────────────────────────────
         if (!session.useCurrentPosition) {
@@ -98,9 +97,15 @@ void ClickEngine::loop(const ClickSession session)
         injector->click(session.button, session.clickType, m_cancel);
         emit clickCountUpdated(++clicks);
 
+        // Finish right after the last allowed click, not one full period later.
+        if (ClickTiming::limitReached(clicks, session.stopAfterClicks,
+                                      elapsedSec(), session.stopAfterSeconds)) break;
+
         // ── Delay ─────────────────────────────────────────────────────────────
+        // One period, but never past the stop-after-seconds limit.
         if (session.clickRate.count() >= 1 && !m_cancel.load()) {
-            auto deadline = std::chrono::steady_clock::now() + session.clickRate;
+            auto deadline = ClickTiming::nextWake(std::chrono::steady_clock::now(), session.clickRate,
+                                                  startTime, session.stopAfterSeconds);
             while (!m_cancel.load() && std::chrono::steady_clock::now() < deadline)
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }

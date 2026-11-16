@@ -61,7 +61,7 @@ private slots:
             30.0,
             5.0);
 
-        QCOMPARE(session.clickRate.count(),   200LL);
+        QCOMPARE(std::chrono::duration_cast<std::chrono::milliseconds>(session.clickRate).count(),   200LL);
         QCOMPARE(session.button,              MouseButton::Right);
         QCOMPARE(session.clickType,           ClickType::Double);
         QVERIFY(!session.useCurrentPosition);

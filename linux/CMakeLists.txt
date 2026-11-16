@@ -53,6 +53,7 @@ set(CORE_SOURCES
     src/core/ClickEngine.h
     src/core/ClickRateParser.cpp
     src/core/ClickRateParser.h
+    src/core/ClickTiming.h
     src/core/IdleDetector.cpp
     src/core/IdleDetector.h
     src/core/InputInjector.h

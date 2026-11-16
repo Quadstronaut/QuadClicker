@@ -2,6 +2,7 @@
 
 #include "../core/ClickEngine.h"
 #include "../core/ClickRateParser.h"
+#include "../core/ClickTiming.h"
 #include "../core/InputInjectorFactory.h"
 #include "../core/IdleDetector.h"
 #include "../models/ClickSession.h"
@@ -34,7 +35,7 @@ static void sigintHandler(int)
 static bool tryParseArgs(int argc, char* argv[],
                           ClickSession& session, std::string& error)
 {
-    std::chrono::milliseconds rate{0};
+    std::chrono::microseconds rate{0};   // full precision, see ClickSession::clickRate
     MouseButton button        = MouseButton::Left;
     ClickType   clickType     = ClickType::Single;
     bool        useCurrentPos = true;
@@ -185,7 +186,7 @@ int CliEntryPoint::run(int argc, char* argv[])
         : ("(" + std::to_string(session.x) + "," + std::to_string(session.y) + ")");
 
     std::cout << "QuadClicker | "
-              << session.clickRate.count() << "ms delay | "
+              << std::chrono::duration<double, std::milli>(session.clickRate).count() << "ms delay | "
               << buttonStr << " " << typeStr << " click | "
               << locStr << "\n";
 
@@ -238,14 +239,14 @@ int CliEntryPoint::run(int argc, char* argv[])
 
         std::cout << "\rClicking...           " << std::flush;
 
+        auto elapsedSec = [&startTime] {
+            return std::chrono::duration<double>(std::chrono::steady_clock::now() - startTime).count();
+        };
+
         while (!g_sigintReceived.load()) {
             // Stop conditions
-            if (session.stopAfterClicks > 0 && clicks >= session.stopAfterClicks) break;
-            if (session.stopAfterSeconds > 0.0) {
-                auto elapsed = std::chrono::steady_clock::now() - startTime;
-                if (std::chrono::duration<double>(elapsed).count() >= session.stopAfterSeconds)
-                    break;
-            }
+            if (ClickTiming::limitReached(clicks, session.stopAfterClicks,
+                                          elapsedSec(), session.stopAfterSeconds)) break;
 
             // Position
             if (!session.useCurrentPosition)
@@ -260,9 +261,14 @@ int CliEntryPoint::run(int argc, char* argv[])
             if (clicks % 50 == 0)
                 std::cout << "\rClicks: " << clicks << "   " << std::flush;
 
-            // Delay
+            // Finish right after the last allowed click, not one full period later.
+            if (ClickTiming::limitReached(clicks, session.stopAfterClicks,
+                                          elapsedSec(), session.stopAfterSeconds)) break;
+
+            // Delay: one period, but never past the stop-after-seconds limit.
             if (session.clickRate.count() >= 1) {
-                auto deadline = std::chrono::steady_clock::now() + session.clickRate;
+                auto deadline = ClickTiming::nextWake(std::chrono::steady_clock::now(), session.clickRate,
+                                                      startTime, session.stopAfterSeconds);
                 while (!g_sigintReceived.load() && std::chrono::steady_clock::now() < deadline)
                     std::this_thread::sleep_for(std::chrono::milliseconds(1));
             }

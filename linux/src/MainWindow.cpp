@@ -892,7 +892,7 @@ void MainWindow::restoreFromTray()
 bool MainWindow::tryBuildSession(ClickSession& session, QString& error) const
 {
     // Click rate
-    std::chrono::milliseconds delay;
+    std::chrono::microseconds delay;   // full precision (600/s = 1666.7 us)
     if (!ClickRateParser::tryParse(composeRateString(), delay, error)) return false;
 
     // Stop after clicks
@@ -1163,7 +1163,7 @@ void MainWindow::updateRateHint()
         return;
     }
 
-    std::chrono::milliseconds delay{};
+    std::chrono::microseconds delay{};
     QString err;
     if (!ClickRateParser::tryParse(composeRateString(), delay, err)) {
         m_rateHintLabel->setText(QString());
@@ -1172,7 +1172,7 @@ void MainWindow::updateRateHint()
         return;
     }
 
-    double ms = static_cast<double>(delay.count());
+    double ms = std::chrono::duration<double, std::milli>(delay).count();
     double cps = 1000.0 / ms;
     bool isDelay = m_modeDelay && m_modeDelay->isChecked();
     bool veryFast = cps > 100.0;
