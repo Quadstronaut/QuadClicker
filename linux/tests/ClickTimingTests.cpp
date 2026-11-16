@@ -72,6 +72,37 @@ private slots:
         QVERIFY(ClickTiming::nextWake(now, 100ms, start, 1e300) == now + 100ms);
     }
 
+    // ── Sleep slices (F24) ────────────────────────────────────────────────────
+
+    void sleepSlice_longGap_isCappedAt50ms()
+    {
+        auto now = Clock::time_point{} + 1h;
+        QVERIFY(ClickTiming::sleepSlice(now, now + 360min) == 50ms);   // was 1 ms per wake
+    }
+
+    void sleepSlice_shortGap_isExact()
+    {
+        auto now = Clock::time_point{} + 1h;
+        QVERIFY(ClickTiming::sleepSlice(now, now + 1667us) == 1667us);
+    }
+
+    void sleepSlice_pastDeadline_isZero()
+    {
+        auto now = Clock::time_point{} + 1h;
+        QVERIFY(ClickTiming::sleepSlice(now, now - 1ms) == Clock::duration::zero());
+        QVERIFY(ClickTiming::sleepSlice(now, now) == Clock::duration::zero());
+    }
+
+    void sleepSlice_wakeCountForLongGap()
+    {
+        // A 5 s gap is now 100 wake-ups (was ~5000).
+        auto now  = Clock::time_point{} + 1h;
+        auto wake = now + 5s;
+        int wakes = 0;
+        while (now < wake) { now += ClickTiming::sleepSlice(now, wake); ++wakes; }
+        QCOMPARE(wakes, 100);
+    }
+
     void nextWake_keepsSubMillisecondPeriod()
     {
         // 600/s: 1666 us must survive into the wake time (F23).

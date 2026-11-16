@@ -242,6 +242,12 @@ int CliEntryPoint::run(int argc, char* argv[])
     char* fakeArgv[] = {appName, nullptr};
     QGuiApplication app(fakeArgc, fakeArgv);
 
+    // The platform is only known once the app object exists.
+    if (!session.useCurrentPosition && !InputInjectorFactory::canMoveCursor()) {
+        std::cerr << "Error: " << InputInjectorFactory::fixedLocationUnsupportedMessage() << "\n";
+        return 1;
+    }
+
     // Create injector early to fail fast if the display isn't available
     std::unique_ptr<InputInjector> injector;
     try {
@@ -264,7 +270,10 @@ int CliEntryPoint::run(int argc, char* argv[])
             auto threshold = std::chrono::milliseconds(
                 static_cast<long long>(session.idleWaitSeconds * 1000.0));
             while (!g_sigintReceived.load()) {
-                if (IdleDetector::getIdleTime() >= threshold) break;
+                auto idle = IdleDetector::getIdleTime();
+                if (idle == IdleDetector::Unknown)   // used to read as 0: wait forever
+                    throw std::runtime_error(IdleDetector::unavailableMessage().toStdString());
+                if (idle >= threshold) break;
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
         }
@@ -305,8 +314,12 @@ int CliEntryPoint::run(int argc, char* argv[])
             if (session.clickRate.count() >= 1) {
                 auto deadline = ClickTiming::nextWake(std::chrono::steady_clock::now(), session.clickRate,
                                                       startTime, session.stopAfterSeconds);
-                while (!g_sigintReceived.load() && std::chrono::steady_clock::now() < deadline)
-                    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                // Sleep in slices of at most 50 ms (was 1 ms): Ctrl+C is still
+                // noticed quickly, but a long gap no longer wakes the CPU 1000x/s.
+                for (auto now = std::chrono::steady_clock::now();
+                     !g_sigintReceived.load() && now < deadline;
+                     now = std::chrono::steady_clock::now())
+                    std::this_thread::sleep_for(ClickTiming::sleepSlice(now, deadline));
             }
         }
 

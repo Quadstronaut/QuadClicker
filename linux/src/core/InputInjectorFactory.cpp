@@ -23,4 +23,15 @@ std::unique_ptr<InputInjector> InputInjectorFactory::create()
     return std::unique_ptr<InputInjector>(createX11Injector());
 }
 
+bool InputInjectorFactory::canMoveCursor()
+{
+    return QGuiApplication::platformName() != QLatin1String("wayland");
+}
+
+const char* InputInjectorFactory::fixedLocationUnsupportedMessage()
+{
+    return "Fixed location is not supported on Wayland (the pointer cannot be moved). "
+           "Use the current cursor position.";
+}
+
 } // namespace QuadClicker

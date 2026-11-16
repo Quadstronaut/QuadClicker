@@ -43,4 +43,15 @@ inline Clock::time_point nextWake(Clock::time_point now, Clock::duration period,
     return now + period;
 }
 
+/// Longest single sleep while waiting for the next click: bounds how late a
+/// Stop/Ctrl+C is noticed without waking the CPU every millisecond.
+inline constexpr std::chrono::milliseconds MaxSleepSlice{50};
+
+/// How long to sleep now: the time left until \p wake, at most MaxSleepSlice.
+inline Clock::duration sleepSlice(Clock::time_point now, Clock::time_point wake)
+{
+    if (wake <= now) return Clock::duration::zero();
+    return std::min<Clock::duration>(wake - now, MaxSleepSlice);
+}
+
 } // namespace QuadClicker::ClickTiming

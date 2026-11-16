@@ -16,8 +16,13 @@ namespace QuadClicker {
 /// Wayland: Global hotkeys are not supported by the Wayland protocol. Registration
 ///          is silently skipped and a note is surfaced in the UI.
 ///
-/// Thread safety: register() and unregisterAll() are safe to call from the UI thread
-/// while the polling thread is running.
+/// Thread safety: register() and unregisterAll() are called from the UI thread
+/// while the polling thread uses the same Display. That is only safe because
+/// main() calls XInitThreads() before any other Xlib call (libX11 >= 1.8 does
+/// this automatically; Ubuntu 22.04 ships 1.7).
+///
+/// registerHotkey() returns -1 when the chord is already grabbed by another
+/// client (BadAccess), instead of claiming success for a hotkey that never fires.
 class HotkeyManager : public QObject {
     Q_OBJECT
 
@@ -63,7 +68,8 @@ private:
     std::map<int, HotkeyDef>     m_hotkeys;
     int                          m_nextHandle{1};
 
-    // X11 display used only by the poll thread (separate from UI display)
+    // X11 display shared by the poll thread (events) and the UI thread (grabs).
+    // Grabs must be made on the same connection that receives the KeyPress events.
     void* m_display{nullptr}; // Display* stored as void* to avoid X11 include in header
 };
 

@@ -16,18 +16,18 @@ namespace QuadClicker {
 static std::chrono::milliseconds getIdleTimeX11()
 {
     Display* display = XOpenDisplay(nullptr);
-    if (!display) return std::chrono::milliseconds(0);
+    if (!display) return IdleDetector::Unknown;
 
     XScreenSaverInfo* info = XScreenSaverAllocInfo();
     if (!info) {
         XCloseDisplay(display);
-        return std::chrono::milliseconds(0);
+        return IdleDetector::Unknown;
     }
 
     Window root = DefaultRootWindow(display);
     Status status = XScreenSaverQueryInfo(display, root, info);
 
-    std::chrono::milliseconds result(0);
+    std::chrono::milliseconds result = IdleDetector::Unknown;
     if (status) {
         result = std::chrono::milliseconds(static_cast<long long>(info->idle));
     }
@@ -61,7 +61,7 @@ static std::chrono::milliseconds getIdleTimeWayland()
                 return std::chrono::milliseconds(
                     static_cast<long long>(reply.value()) * 1000LL);
         }
-        return std::chrono::milliseconds(0);
+        return IdleDetector::Unknown;
     }
 
     QDBusReply<uint> reply = iface.call(QStringLiteral("GetSessionIdleTime"));
@@ -69,7 +69,7 @@ static std::chrono::milliseconds getIdleTimeWayland()
         return std::chrono::milliseconds(
             static_cast<long long>(reply.value()) * 1000LL);
 
-    return std::chrono::milliseconds(0);
+    return IdleDetector::Unknown;
 }
 #endif // QT_DBUS_LIB
 
@@ -85,6 +85,13 @@ std::chrono::milliseconds IdleDetector::getIdleTime()
 
     // Default: X11
     return getIdleTimeX11();
+}
+
+QString IdleDetector::unavailableMessage()
+{
+    return QStringLiteral(
+        "Idle time cannot be read on this desktop, so idle wait is unavailable. "
+        "Set idle wait to 0.");
 }
 
 } // namespace QuadClicker
