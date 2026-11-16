@@ -39,6 +39,8 @@ jobs:
           xcrun xcresulttool get log --path "$RUNNER_TEMP/tests.xcresult" --type console || true
           xcrun xcresulttool get test-results summary --path "$RUNNER_TEMP/tests.xcresult" || true
           xcrun xcresulttool export diagnostics --path "$RUNNER_TEMP/tests.xcresult" --output-path "$RUNNER_TEMP/diag" || true
-          find "$RUNNER_TEMP/diag" -type f | head -40 || true
-          find "$RUNNER_TEMP/diag" -type f \( -name '*StandardOutput*' -o -name '*.txt' -o -name '*.log' \) \
-            -size -200k -exec sh -c 'echo "=== $1"; tail -n 40 "$1"' _ {} \; || true
+          find "$RUNNER_TEMP/diag" -type f -name '*.log' -size -200k -exec sh -c 'echo "=== $1"; tail -n 40 "$1"' _ {} \; || true
+          # How the test host was launched (arguments) and how it exited, from the session's system log.
+          ARCHIVE=$(find "$RUNNER_TEMP/diag" -type d -name '*.logarchive' | head -1)
+          [ -n "$ARCHIVE" ] && log show --archive "$ARCHIVE" --style compact \
+            --predicate 'eventMessage CONTAINS[c] "QuadClicker.app" OR process == "QuadClicker"' | tail -n 80 || true
