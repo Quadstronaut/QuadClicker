@@ -324,13 +324,18 @@ public partial class MainWindow : Window
             return;
         }
 
+        // WPF reports F10 and every Alt+<key> chord as Key.System; the real key is
+        // in SystemKey. Without this, F10 (the default stop key) and Alt chords
+        // could never be captured.
+        var key = e.Key == Key.System ? e.SystemKey : e.Key;
+
         // Ignore lone modifier keys
-        if (e.Key is Key.LeftShift or Key.RightShift or Key.LeftCtrl or Key.RightCtrl
-                  or Key.LeftAlt  or Key.RightAlt  or Key.LWin or Key.RWin or Key.System)
+        if (key is Key.LeftShift or Key.RightShift or Key.LeftCtrl or Key.RightCtrl
+                or Key.LeftAlt  or Key.RightAlt  or Key.LWin or Key.RWin or Key.System)
             return;
 
         var modifiers = Keyboard.Modifiers;
-        string text = BuildHotkeyText(e.Key, modifiers);
+        string text = BuildHotkeyText(key, modifiers);
 
         // Prevent both boxes having the same hotkey
         bool isSameAsOther = _capturingHotkeyBox == StartHotkeyBox
@@ -470,14 +475,21 @@ public partial class MainWindow : Window
         {
             _startHotkeyId = _hotkeys.Register(smod, svk, () =>
                 Dispatcher.Invoke(() => { if (!_isClicking) StartClicking(); }));
+            if (_startHotkeyId < 0) ShowHotkeyUnavailable(StartHotkeyBox.Text);
         }
 
         if (TryParseHotkeyText(StopHotkeyBox.Text, out uint emod, out uint evk))
         {
             _stopHotkeyId = _hotkeys.Register(emod, evk, () =>
                 Dispatcher.Invoke(() => { if (_isClicking) StopClicking(); }));
+            if (_stopHotkeyId < 0) ShowHotkeyUnavailable(StopHotkeyBox.Text);
         }
     }
+
+    // RegisterHotKey fails when another app already owns the chord. Say so instead
+    // of leaving a hotkey in the box that silently does nothing.
+    private void ShowHotkeyUnavailable(string text) =>
+        ShowError($"Hotkey {text} is already in use by another app. Pick a different key.");
 
     private static string BuildHotkeyText(Key key, ModifierKeys mods)
     {
