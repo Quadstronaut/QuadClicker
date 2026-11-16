@@ -29,4 +29,12 @@ jobs:
       - name: Unit tests
         run: |
           xcodebuild -project macos/QuadClicker.xcodeproj -scheme QuadClicker -destination 'platform=macOS' \
+            -resultBundlePath "$RUNNER_TEMP/tests.xcresult" \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" test
+
+      # Only on failure: show what the test host printed (it can exit before XCTest connects).
+      - name: Test diagnostics
+        if: failure()
+        run: |
+          xcrun xcresulttool get log --path "$RUNNER_TEMP/tests.xcresult" --type console || true
+          xcrun xcresulttool get test-results summary --path "$RUNNER_TEMP/tests.xcresult" || true
