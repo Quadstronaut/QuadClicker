@@ -8,6 +8,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 // Disambiguate: System.Windows.Input also has a MouseButton enum
 using QcMouseButton = QuadClicker.Models.MouseButton;
 using QcClickType   = QuadClicker.Models.ClickType;
@@ -17,11 +18,20 @@ namespace QuadClicker;
 public partial class MainWindow : Window
 {
     // ── State ─────────────────────────────────────────────────────────────────
-    private CancellationTokenSource? _cts;
+    // One ClickRun per Start press. Identity matters: callbacks and cleanup from an
+    // older run that is still winding down must never touch a newer run's state.
+    private sealed class ClickRun
+    {
+        public readonly CancellationTokenSource Cts = new();
+        public readonly ClickEngine Engine = new();
+        public int LatestCount;    // written by the engine thread, read by the UI thread
+        public int RefreshQueued;  // 1 while a click-count refresh is waiting in the dispatcher
+    }
+
+    private ClickRun? _run;
     private bool _isClicking;
 
     // ── Core services ─────────────────────────────────────────────────────────
-    private readonly ClickEngine    _engine    = new();
     private readonly LocationPicker _picker    = new();
     private readonly TrayManager    _tray      = new();
     private HotkeyManager?          _hotkeys;
@@ -63,8 +73,6 @@ public partial class MainWindow : Window
         VersionLabel.Text = "v" + (Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "?");
         _picker.LocationPicked  += OnLocationPicked;
         _picker.PickCancelled   += OnPickCancelled;
-        _engine.ClickCountUpdated += OnClickCountUpdated;
-        _engine.StatusChanged     += OnEngineStatusChanged;
 
         _tray.ShowWindowRequested     += RestoreFromTray;
         _tray.ToggleClickingRequested += () => Dispatcher.Invoke(StartStopBtn_Click, null!, null!);
@@ -222,35 +230,53 @@ public partial class MainWindow : Window
             return;
         }
 
+        var run = new ClickRun();
+        run.Engine.ClickCountUpdated += count => OnClickCountUpdated(run, count);
+        run.Engine.StatusChanged     += status => OnEngineStatusChanged(run, status);
+
+        _run = run;
         _isClicking = true;
         SetButtonState(isClicking: true);
-        _cts = new CancellationTokenSource();
         _tray.SetActiveState(true);
 
+        // This async void method resumes on the UI thread after the await, so the
+        // code below needs no Dispatcher hop.
         try
         {
-            await _engine.RunAsync(session!, _cts.Token);
+            await run.Engine.RunAsync(session!, run.Cts.Token);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
         {
-            Dispatcher.Invoke(() => ShowError($"Error: {ex.Message}"));
+            if (_run == run) ShowError($"Error: {ex.Message}");
         }
         finally
         {
-            Dispatcher.Invoke(() =>
+            // Only the run that is still current may reset the UI. A run that was
+            // stopped (or replaced by a newer Start) already had its UI reset by
+            // StopClicking, and must not cancel or reset its successor.
+            if (_run == run)
             {
-                StopClicking();
+                EndRun();
                 SetStatus(EngineStatus.Stopped);
-            });
+            }
+            // Dispose only now: the engine thread has finished using the token's WaitHandle.
+            run.Cts.Dispose();
         }
     }
 
     private void StopClicking()
     {
-        _cts?.Cancel();
-        _cts?.Dispose();
-        _cts = null;
+        // Cancel but do NOT dispose: the engine thread may still be between waits and
+        // about to touch token.WaitHandle. The run disposes its own source when it ends.
+        _run?.Cts.Cancel();
+        EndRun();
+        SetStatus(EngineStatus.Stopped);
+    }
+
+    private void EndRun()
+    {
+        _run = null;
         _isClicking = false;
         SetButtonState(isClicking: false);
         _tray.SetActiveState(false);
@@ -342,18 +368,29 @@ public partial class MainWindow : Window
 
     // ── Engine callbacks ──────────────────────────────────────────────────────
 
-    private void OnClickCountUpdated(int count)
+    // Called on the engine thread once per click. Never blocks: it records the
+    // latest count and queues at most one label refresh. Background priority keeps
+    // the refresh below input, so a fast click rate cannot starve the Stop button.
+    private void OnClickCountUpdated(ClickRun run, int count)
     {
-        Dispatcher.Invoke(() =>
+        Volatile.Write(ref run.LatestCount, count);
+        if (Interlocked.Exchange(ref run.RefreshQueued, 1) == 1) return;
+
+        Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
         {
+            Interlocked.Exchange(ref run.RefreshQueued, 0);
+            if (_run != run) return; // stale run: its UI was already reset
             ClickCountLabel.Visibility = Visibility.Visible;
-            ClickCountLabel.Text = $"Clicks: {count}";
+            ClickCountLabel.Text = $"Clicks: {Volatile.Read(ref run.LatestCount)}";
         });
     }
 
-    private void OnEngineStatusChanged(EngineStatus status)
+    private void OnEngineStatusChanged(ClickRun run, EngineStatus status)
     {
-        Dispatcher.Invoke(() => SetStatus(status));
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (_run == run) SetStatus(status);
+        });
     }
 
     private void OnLocationPicked(int x, int y)
@@ -719,8 +756,10 @@ public partial class MainWindow : Window
         _hotkeys?.Dispose();
         _picker.Dispose();
         _tray.Dispose();
-        _cts?.Cancel();
-        _cts?.Dispose();
+        // Cancel and forget the run. Its own finally disposes the token source, and
+        // because _run is null it will not touch the (now disposed) tray or UI.
+        _run?.Cts.Cancel();
+        _run = null;
         base.OnClosed(e);
     }
 }
