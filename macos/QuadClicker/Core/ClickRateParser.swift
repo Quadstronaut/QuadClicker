@@ -3,6 +3,10 @@
 
 import Foundation
 
+// The parser and the CLI report failures as plain message strings in
+// Result<_, String>; Result requires its Failure type to conform to Error.
+extension String: @retroactive Error {}
+
 enum ClickRateParser {
     static let minDelayMs: Double = 1.0
     static let maxDelayMs: Double = 360.0 * 60_000.0   // 360 minutes

@@ -38,7 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard !AXIsProcessTrusted() else { return }
 
         // Passing the prompt option triggers the system dialog.
-        let options: NSDictionary = [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true]
-        AXIsProcessTrustedWithOptions(options)
+        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+        _ = AXIsProcessTrustedWithOptions(options)
     }
 }

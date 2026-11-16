@@ -93,16 +93,18 @@ enum CliEntryPoint {
 
         // Run synchronously (CLI mode is synchronous)
         let semaphore = DispatchSemaphore(value: 0)
-        var resultError: Error?
-        var wasCancelled = false
+        // A Task closure may not mutate captured local vars, so the outcome goes
+        // into a reference box. The semaphore orders the write before the read.
+        final class Outcome { var error: Error?; var wasCancelled = false }
+        let outcome = Outcome()
 
         Task {
             do {
                 try await engine.run(session: session, cancellationToken: token)
             } catch is CancellationError {
-                wasCancelled = true
+                outcome.wasCancelled = true
             } catch {
-                resultError = error
+                outcome.error = error
             }
             semaphore.signal()
         }
@@ -111,11 +113,11 @@ enum CliEntryPoint {
         sigintSource.cancel()
         signal(SIGINT, SIG_DFL)
 
-        if wasCancelled || token.isCancelled {
+        if outcome.wasCancelled || token.isCancelled {
             print("\nStopped. Total clicks: \(lastCount)")
             return exitInterrupted
         }
-        if let err = resultError {
+        if let err = outcome.error {
             fputs("\nRuntime error: \(err.localizedDescription)\n", stderr)
             return exitRuntimeError
         }

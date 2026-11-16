@@ -64,7 +64,7 @@ final class AppSettings: Codable {
         clickRateUnit      = (try? c.decode(String.self,        forKey: .clickRateUnit))     ?? "ms"
         button             = (try? c.decode(MouseButton.self,   forKey: .button))            ?? .left
         clickType          = (try? c.decode(ClickType.self,     forKey: .clickType))         ?? .single
-        useCurrentPosition = (try? c.decode(Bool.self,          forKey: .useCurrentPosition))?? true
+        useCurrentPosition = (try? c.decode(Bool.self,          forKey: .useCurrentPosition)) ?? true
         x                  = (try? c.decode(Int.self,           forKey: .x))                 ?? 0
         y                  = (try? c.decode(Int.self,           forKey: .y))                 ?? 0
         stopAfterClicks    = (try? c.decode(Int.self,           forKey: .stopAfterClicks))   ?? 0
