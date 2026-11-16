@@ -13,10 +13,13 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # macOS implementation is planned for Phase 2.
-      # This job is a placeholder — it succeeds immediately once macos/ contains a build target.
-      - name: Placeholder
+      # Compile the app for real (QCLK-8). No signing: this proves the Swift builds, nothing more.
+      - name: Show Xcode and project
         run: |
-          echo "macOS build — Phase 2 not yet started."
-          echo "Target: Swift + SwiftUI + CGEventPost, macOS 13 Ventura minimum."
-          exit 0
+          xcodebuild -version
+          xcodebuild -project macos/QuadClicker.xcodeproj -list
+
+      - name: Build
+        run: |
+          xcodebuild -project macos/QuadClicker.xcodeproj -target QuadClicker -configuration Release \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
