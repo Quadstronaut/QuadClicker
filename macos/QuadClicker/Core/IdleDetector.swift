@@ -12,9 +12,11 @@ enum IdleDetector {
     /// Returns 0 on failure (treated as "not idle").
     static func getIdleTime() -> TimeInterval {
         // kCGAnyInputEventType covers keyboard + mouse + stylus etc.
+        // It is ((CGEventType)(~0)) and has no Swift case; `.null` is
+        // kCGEventNull (0), which measured time since a null event, not user input.
         let idle = CGEventSource.secondsSinceLastEventType(
             .hidSystemState,
-            eventType: .null   // .null == kCGAnyInputEventType (value 0)
+            eventType: CGEventType(rawValue: ~0)!   // kCGAnyInputEventType
         )
         // CGEventSource returns a negative value on some error paths
         return max(0, idle)

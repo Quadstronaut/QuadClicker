@@ -29,9 +29,10 @@ struct QuadClickerApp: App {
             exit(code)
         }
 
-        // GUI mode — load settings before the window appears
-        let settings = AppSettings.load()
-        appDelegate.settings = settings
+        // GUI mode — share ONE settings instance with the view model. A second
+        // AppSettings.load() here meant applicationWillTerminate saved the stale
+        // startup copy over the user's changes.
+        appDelegate.settings = AppState.shared.settings
 
         if isMinimized {
             // The window will be created hidden; the tray icon is always visible.
