@@ -64,7 +64,7 @@ final class LocationPicker {
         window.isOpaque = false
         window.ignoresMouseEvents = false
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        window.cursor = .crosshair
+        // (NSWindow has no `cursor` property; the crosshair is set after showing.)
 
         // Instruction label
         let label = NSTextField(labelWithString: "Click to select location  |  ESC to cancel")
@@ -92,6 +92,7 @@ final class LocationPicker {
 
         overlayWindow = window
         window.makeKeyAndOrderFront(nil)
+        NSCursor.crosshair.set()
 
         // ESC via local key monitor on the overlay window
         localKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in

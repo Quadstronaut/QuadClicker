@@ -59,12 +59,14 @@ enum CliEntryPoint {
 
         let token = CancellationToken()
 
-        // Handle Ctrl+C (SIGINT)
-        signal(SIGINT) { _ in
-            // Find the active token via a global; there can only be one headless run at a time
-            CliEntryPoint._activeToken?.cancel()
-        }
-        _activeToken = token
+        // Handle Ctrl+C (SIGINT) through a dispatch source, not a C signal handler:
+        // token.cancel() takes an NSLock and signals a semaphore, neither of which
+        // is async-signal-safe (a signal landing while the click thread held the
+        // lock could deadlock). The source runs the handler on a normal queue.
+        signal(SIGINT, SIG_IGN)
+        let sigintSource = DispatchSource.makeSignalSource(signal: SIGINT, queue: .global())
+        sigintSource.setEventHandler { token.cancel() }
+        sigintSource.resume()
 
         let engine = ClickEngine()
         var lastCount = 0
@@ -91,38 +93,37 @@ enum CliEntryPoint {
 
         // Run synchronously (CLI mode is synchronous)
         let semaphore = DispatchSemaphore(value: 0)
-        var resultError: Error?
-        var wasCancelled = false
+        // A Task closure may not mutate captured local vars, so the outcome goes
+        // into a reference box. The semaphore orders the write before the read.
+        final class Outcome { var error: Error?; var wasCancelled = false }
+        let outcome = Outcome()
 
         Task {
             do {
                 try await engine.run(session: session, cancellationToken: token)
             } catch is CancellationError {
-                wasCancelled = true
+                outcome.wasCancelled = true
             } catch {
-                resultError = error
+                outcome.error = error
             }
             semaphore.signal()
         }
 
         semaphore.wait()
-        _activeToken = nil
+        sigintSource.cancel()
         signal(SIGINT, SIG_DFL)
 
-        if wasCancelled || token.isCancelled {
+        if outcome.wasCancelled || token.isCancelled {
             print("\nStopped. Total clicks: \(lastCount)")
             return exitInterrupted
         }
-        if let err = resultError {
+        if let err = outcome.error {
             fputs("\nRuntime error: \(err.localizedDescription)\n", stderr)
             return exitRuntimeError
         }
         print("\nDone. Total clicks: \(lastCount)")
         return exitSuccess
     }
-
-    // Shared mutable state for SIGINT handler (process-wide singleton OK for CLI)
-    private static var _activeToken: CancellationToken?
 
     // ── Argument parser ───────────────────────────────────────────────────────
 
@@ -176,7 +177,12 @@ enum CliEntryPoint {
                 guard let val = nextValue() else {
                     return .failure("Missing value after '\(arg)'")
                 }
-                clickType = val.lowercased() == "double" ? .double_ : .single
+                switch val.lowercased() {
+                case "single": clickType = .single
+                case "double": clickType = .double_
+                default:
+                    return .failure("Unknown click type '\(val)'. Use: single, double.")
+                }
 
             case "--location":
                 guard let val = nextValue() else {
@@ -196,8 +202,9 @@ enum CliEntryPoint {
                 guard let val = nextValue() else {
                     return .failure("Missing value after '\(arg)'")
                 }
-                guard let n = Int(val) else {
-                    return .failure("--stop-after-clicks must be an integer.")
+                // Negative, NaN or infinite limits would silently mean "unlimited".
+                guard let n = Int(val), n >= 0 else {
+                    return .failure("--stop-after-clicks must be a non-negative integer.")
                 }
                 stopClicks = n
 
@@ -205,8 +212,8 @@ enum CliEntryPoint {
                 guard let val = nextValue() else {
                     return .failure("Missing value after '\(arg)'")
                 }
-                guard let n = Double(val) else {
-                    return .failure("--stop-after-seconds must be a number.")
+                guard let n = Double(val), n.isFinite, n >= 0 else {
+                    return .failure("--stop-after-seconds must be a non-negative number.")
                 }
                 stopSeconds = n
 
@@ -214,8 +221,8 @@ enum CliEntryPoint {
                 guard let val = nextValue() else {
                     return .failure("Missing value after '\(arg)'")
                 }
-                guard let n = Double(val) else {
-                    return .failure("--idle-wait must be a number.")
+                guard let n = Double(val), n.isFinite, n >= 0 else {
+                    return .failure("--idle-wait must be a non-negative number.")
                 }
                 idleWait = n
 
@@ -265,9 +272,9 @@ enum CliEntryPoint {
           --button <left|right|middle> Mouse button to click (default: left)
           --type <single|double>       Click type (default: single)
           --location <x,y>             Fixed screen coordinate (default: current cursor)
-          --stop-after-clicks <n>      Stop after N clicks (0 = unlimited)
-          --stop-after-seconds <n>     Stop after N seconds (0 = unlimited)
-          --idle-wait <n>              Wait for N seconds of system idle before starting
+          --stop-after-clicks <n>      Stop after N clicks, N >= 0 (0 = unlimited)
+          --stop-after-seconds <n>     Stop after N seconds, N >= 0 (0 = unlimited)
+          --idle-wait <n>              Wait for N seconds of system idle before starting (N >= 0)
           --no-gui                     Force headless mode
           --minimized                  Launch GUI minimized to tray
           --version                    Print version and exit 0

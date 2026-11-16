@@ -37,21 +37,24 @@ enum InputInjector {
         clickType: ClickType,
         isCancelled: () -> Bool = { false }
     ) throws {
-        try sendSingleClick(button: button)
+        try sendSingleClick(button: button, clickState: 1)
 
         if clickType == .double_ && !isCancelled() {
-            // Use the system double-click interval (same as Windows GetDoubleClickTime)
-            let interval = NSEvent.doubleClickInterval
-            Thread.sleep(forTimeInterval: interval)
+            // NSEvent.doubleClickInterval is the MAXIMUM gap that still counts as a
+            // double click; sleeping that long landed on the edge of the window.
+            // Use a quarter of it, capped at 50 ms (same rule as Windows/Linux).
+            let gap = min(0.05, NSEvent.doubleClickInterval / 4)
+            Thread.sleep(forTimeInterval: gap)
             if !isCancelled() {
-                try sendSingleClick(button: button)
+                // Click state 2 is what makes AppKit report clickCount == 2.
+                try sendSingleClick(button: button, clickState: 2)
             }
         }
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
 
-    private static func sendSingleClick(button: MouseButton) throws {
+    private static func sendSingleClick(button: MouseButton, clickState: Int64) throws {
         let pos = currentMousePosition()
         let (downType, upType, cgButton) = eventTypes(for: button)
 
@@ -73,14 +76,20 @@ enum InputInjector {
             throw InjectionError.cgEventCreationFailed("mouseUp event for \(button)")
         }
 
+        // Without this field apps derive clickCount 1 for every event, so a
+        // "double" was two single clicks.
+        downEvent.setIntegerValueField(.mouseEventClickState, value: clickState)
+        upEvent.setIntegerValueField(.mouseEventClickState, value: clickState)
+
         downEvent.post(tap: .cghidEventTap)
         upEvent.post(tap: .cghidEventTap)
     }
 
     private static func currentMousePosition() -> CGPoint {
-        // CGEventSourceGetLocalEventsSuppressionInterval is not what we want here;
-        // read the actual HID cursor position.
-        NSEvent.mouseLocation.flipped
+        // A fresh CGEvent's location is the cursor in CG global coordinates
+        // (top-left origin of the primary display), exactly what CGEvent posting
+        // expects, on every monitor. The fallback flips against the PRIMARY screen.
+        CGEvent(source: nil)?.location ?? NSEvent.mouseLocation.flipped
     }
 
     private static func eventTypes(
@@ -102,11 +111,13 @@ enum InputInjector {
 // AppKit uses bottom-left origin; CoreGraphics uses top-left origin.
 private extension NSPoint {
     /// Convert from AppKit (bottom-left) coordinates to CG (top-left) coordinates.
+    /// Global Cocoa coordinates are relative to the PRIMARY screen (screens[0]),
+    /// not NSScreen.main (the key window's screen, which may be a secondary
+    /// display of a different height).
     var flipped: CGPoint {
-        guard let screen = NSScreen.main else {
+        guard let primary = NSScreen.screens.first else {
             return CGPoint(x: x, y: y)
         }
-        let screenHeight = screen.frame.height
-        return CGPoint(x: x, y: screenHeight - y)
+        return CGPoint(x: x, y: primary.frame.maxY - y)
     }
 }

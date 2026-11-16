@@ -60,12 +60,17 @@ final class ClickEngine {
         }
 
         onStatusChanged?(.clicking)
-        let startTime = Date()
+        // Monotonic (uptime) clock: wall-clock changes cannot stretch or cut the limit.
+        let startTime = ProcessInfo.processInfo.systemUptime
+        func elapsed() -> TimeInterval { ProcessInfo.processInfo.systemUptime - startTime }
+        func limitReached() -> Bool {
+            (session.stopAfterClicks > 0 && clicks >= session.stopAfterClicks) ||
+            (session.stopAfterSeconds > 0 && elapsed() >= session.stopAfterSeconds)
+        }
 
         while !token.isCancelled {
             // ── Stop conditions ───────────────────────────────────────────────
-            if session.stopAfterClicks > 0 && clicks >= session.stopAfterClicks { break }
-            if session.stopAfterSeconds > 0 && Date().timeIntervalSince(startTime) >= session.stopAfterSeconds { break }
+            if limitReached() { break }
 
             // ── Position ──────────────────────────────────────────────────────
             if !session.useCurrentPosition {
@@ -89,9 +94,17 @@ final class ClickEngine {
             clicks += 1
             onClickCountUpdated?(clicks)
 
+            // Finish right after the last allowed click, not one full period later.
+            if limitReached() { break }
+
             // ── Delay ─────────────────────────────────────────────────────────
+            // One period, but never past the stop-after-seconds limit.
             if session.clickRate >= 0.001 && !token.isCancelled {
-                token.sleep(seconds: session.clickRate)
+                var wait = session.clickRate
+                if session.stopAfterSeconds > 0 {
+                    wait = min(wait, max(0, session.stopAfterSeconds - elapsed()))
+                }
+                token.sleep(seconds: wait)
             }
         }
 

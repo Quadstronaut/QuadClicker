@@ -232,10 +232,17 @@ final class ClickerViewModel: ObservableObject {
             } catch is CancellationError {
                 // normal stop
             } catch {
-                errorMessage = "Error: \(error.localizedDescription)"
+                if self.cancellationToken === token {
+                    errorMessage = "Error: \(error.localizedDescription)"
+                }
             }
-            // Always land here
+            // Only the run that is still current may reset the UI. After Stop ->
+            // Start, this older run finishes late; resetting here used to mark the
+            // NEW run stopped while it kept clicking (and the stop hotkey then
+            // ignored it, and the next Start orphaned its token).
             await MainActor.run {
+                guard self.cancellationToken === token else { return }
+                self.cancellationToken = nil
                 self.isClicking = false
                 self.engineStatus = .stopped
                 self.trayManager.setActiveState(false)
@@ -265,11 +272,13 @@ final class ClickerViewModel: ObservableObject {
             errorMessage = "Stop after (clicks) must be a non-negative integer."
             return nil
         }
-        guard let stopSecs = Double(stopSecondsText), stopSecs >= 0 else {
+        // isFinite: Double("inf") parses and passes ">= 0"; an infinite limit
+        // never fires (and an infinite idle wait never ends).
+        guard let stopSecs = Double(stopSecondsText), stopSecs.isFinite, stopSecs >= 0 else {
             errorMessage = "Stop after (seconds) must be a non-negative number."
             return nil
         }
-        guard let idle = Double(idleWaitText), idle >= 0 else {
+        guard let idle = Double(idleWaitText), idle.isFinite, idle >= 0 else {
             errorMessage = "Idle wait must be a non-negative number."
             return nil
         }
@@ -313,6 +322,14 @@ final class ClickerViewModel: ObservableObject {
                 guard let self, self.isClicking else { return }
                 self.stopClicking()
             }
+        }
+
+        // register() returns nil without Accessibility permission; say so instead
+        // of leaving hotkeys that silently do nothing.
+        let wanted = HotkeySpec.parse(startHotkeyText) != nil || HotkeySpec.parse(stopHotkeyText) != nil
+        if wanted && startHotkeyToken == nil && stopHotkeyToken == nil && !AXIsProcessTrusted() {
+            errorMessage = "Global hotkeys need Accessibility permission (System Settings > "
+                         + "Privacy & Security > Accessibility). Restart QuadClicker after granting it."
         }
     }
 
@@ -389,6 +406,11 @@ struct ContentView: View {
             }
         }
         .onDisappear {
+            vm.saveSettings()
+        }
+        // Quitting does not reliably trigger onDisappear; copy the form into the
+        // shared settings instance before AppDelegate saves it on termination.
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
             vm.saveSettings()
         }
     }
@@ -787,10 +809,19 @@ struct HotkeyTextField: NSViewRepresentable {
         field.bezelStyle = .roundedBezel
         field.focusRingType = .none
         field.onKeyDown = context.coordinator.handleKeyDown
+        // The field is not editable, so controlTextDidBeginEditing never fires;
+        // focus has to come from the responder chain instead.
+        let coordinator = context.coordinator
+        field.onFocusChange = { focused in
+            if focused { coordinator.parent.onFocus() } else { coordinator.parent.onLoseFocus() }
+        }
         return field
     }
 
     func updateNSView(_ nsView: NSTextField, context: Context) {
+        // Keep the coordinator's copy current: it holds isCapturing, which
+        // handleKeyDown checks. Without this it stayed at its initial value.
+        context.coordinator.parent = self
         if nsView.stringValue != text {
             nsView.stringValue = text
         }
@@ -831,6 +862,8 @@ struct HotkeyTextField: NSViewRepresentable {
             let keyName = keyNameForCode(code) ?? (event.charactersIgnoringModifiers?.uppercased() ?? "?")
             parts.append(keyName)
             parent.onKeyCaptured(parts.joined(separator: "+"))
+            // Drop focus so a later click on the field starts a new capture.
+            event.window?.makeFirstResponder(nil)
             return true
         }
     }
@@ -839,6 +872,7 @@ struct HotkeyTextField: NSViewRepresentable {
 // NSTextField subclass that can intercept keyDown before AppKit consumes it
 private class HotkeyNSTextField: NSTextField {
     var onKeyDown: ((NSEvent) -> Bool)?
+    var onFocusChange: ((Bool) -> Void)?
 
     override func keyDown(with event: NSEvent) {
         if onKeyDown?(event) == true { return }
@@ -847,6 +881,18 @@ private class HotkeyNSTextField: NSTextField {
 
     // Allow the field to become first responder to receive key events
     override var acceptsFirstResponder: Bool { true }
+
+    override func becomeFirstResponder() -> Bool {
+        let ok = super.becomeFirstResponder()
+        if ok { onFocusChange?(true) }
+        return ok
+    }
+
+    override func resignFirstResponder() -> Bool {
+        let ok = super.resignFirstResponder()
+        if ok { onFocusChange?(false) }
+        return ok
+    }
 }
 
 private func keyNameForCode(_ code: UInt16) -> String? {
