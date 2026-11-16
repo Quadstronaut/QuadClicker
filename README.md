@@ -60,7 +60,7 @@ QuadClicker is a fast, native, open-source auto-clicker: fully configurable, scr
 |:---|:---|
 | **Click Rate** | Pick **Delay** (`ms` / `sec` / `min`) or **Frequency** (per sec / per min / per hour) via radio. CLI accepts free-form: `100ms`, `5s`, `2min`, `10/s`, `10cps`, `600/min`, `600cpm`, `60/h`, `60cph`, or a bare integer (ms). Bounds: 1 ms ≤ delay ≤ 360 min. |
 | **Mouse Button** | Left, Right, or Middle |
-| **Click Type** | Single or Double (uses OS double-click interval) |
+| **Click Type** | Single or Double (the two clicks are sent ≤ 50 ms apart, well inside the OS double-click window; the pair counts as one click toward the rate and stop limits) |
 | **Location Modes** | Current cursor position · Fixed XY coordinate · Visual overlay picker |
 | **Stop Conditions** | After N clicks · After N seconds · Manual stop |
 | **Idle Detection** | Wait for N seconds of system idle before starting |

@@ -27,6 +27,7 @@
     <Compile Include="..\Models\ClickType.cs" />
     <Compile Include="..\Cli\CliEntryPoint.cs" />
     <Compile Include="..\Core\ClickEngine.cs" />
+    <Compile Include="..\Core\ClickTiming.cs" />
     <Compile Include="..\Core\IdleDetector.cs" />
     <Compile Include="..\Core\InputInjector.cs" />
     <Compile Include="..\PInvoke\NativeMethods.cs" />

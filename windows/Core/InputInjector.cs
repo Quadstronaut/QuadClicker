@@ -13,8 +13,9 @@ internal static class InputInjector
 
         if (clickType == ClickType.Double && !token.IsCancellationRequested)
         {
-            uint interval = NativeMethods.GetDoubleClickTime();
-            token.WaitHandle.WaitOne((int)interval);
+            // A short gap well inside the OS double-click window (see ClickTiming).
+            int gap = ClickTiming.DoubleClickGapMs(NativeMethods.GetDoubleClickTime());
+            token.WaitHandle.WaitOne(gap);
             if (!token.IsCancellationRequested)
                 SendClick(button);
         }
