@@ -24,12 +24,8 @@ jobs:
           xcodebuild -project macos/QuadClicker.xcodeproj -target QuadClicker -configuration Release \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
 
-      # Compile the unit-test bundle but do not run it. Running fails before any test
-      # executes: XCTest launches the host app with AppKit arguments
-      # (-NSTreatUnknownArgumentsAsOpen NO ...), QuadClickerApp.init treats any argument
-      # as CLI mode, and the CLI exits 1 with "Unknown argument". Running the tests needs
-      # an app change to that argument handling (tracked on QCLK-8, not made here).
-      - name: Build unit tests (not run)
+      # Run the unit tests on the runner (QCLK-8). The app ignores the AppKit arguments
+      # XCTest passes, so it no longer exits as "CLI mode" before tests start.
+      - name: Unit tests
         run: |
-          xcodebuild -project macos/QuadClicker.xcodeproj -scheme QuadClicker -destination 'platform=macOS' \
-            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build-for-testing
+          xcodebuild -project macos/QuadClicker.xcodeproj -scheme QuadClicker -destination 'platform=macOS'             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" test

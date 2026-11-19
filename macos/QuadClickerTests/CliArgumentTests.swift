@@ -9,6 +9,18 @@ import XCTest
 
 final class CliArgumentTests: XCTestCase {
 
+    // ── System-injected arguments are not CLI input (QCLK-8) ──────────────────
+
+    func test_userArguments_dropsAppKitPairs() {
+        let args = ["-NSTreatUnknownArgumentsAsOpen", "NO", "-ApplePersistenceIgnoreState", "YES"]
+        XCTAssertEqual(CliEntryPoint.userArguments(from: args), [])
+    }
+
+    func test_userArguments_keepsRealArguments() {
+        let args = ["-NSDocumentRevisionsDebugMode", "YES", "--rate", "100ms", "-h"]
+        XCTAssertEqual(CliEntryPoint.userArguments(from: args), ["--rate", "100ms", "-h"])
+    }
+
     // ── Rate formats parse correctly ──────────────────────────────────────────
 
     func test_rate_100ms_parsesCorrectly() {

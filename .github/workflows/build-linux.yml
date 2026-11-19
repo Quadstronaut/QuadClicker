@@ -19,7 +19,8 @@ jobs:
           sudo apt-get install -y -qq \
             build-essential cmake ninja-build pkg-config \
             qt6-base-dev qt6-base-dev-tools qt6-tools-dev \
-            libqt6svg6-dev libxtst-dev libxss-dev
+            libqt6svg6-dev libxtst-dev libxss-dev \
+            xvfb libxcb-cursor0 libxcb-xinerama0
 
       - name: Configure
         run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -S linux
@@ -30,7 +31,13 @@ jobs:
       - name: Test
         env:
           QT_QPA_PLATFORM: offscreen
-        run: ctest --test-dir build --output-on-failure
+        run: ctest --test-dir build --output-on-failure --exclude-regex ClickEngineTests
+
+      # Real engine + real X11 injector (XTest) against a virtual X server (QCLK-7 F7).
+      - name: Engine tests under Xvfb
+        env:
+          QT_QPA_PLATFORM: xcb
+        run: xvfb-run -a ctest --test-dir build --output-on-failure --tests-regex ClickEngineTests
 
       - name: Upload binary artifact
         uses: actions/upload-artifact@v7

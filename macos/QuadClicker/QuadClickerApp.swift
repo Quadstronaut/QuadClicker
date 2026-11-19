@@ -17,7 +17,8 @@ struct QuadClickerApp: App {
         // ── CLI mode detection ─────────────────────────────────────────────────
         // CommandLine.arguments[0] is always the executable path.
         // --minimized is the only argument that is valid in GUI mode.
-        let rawArgs = Array(CommandLine.arguments.dropFirst())
+        // AppKit/XCTest inject their own "-NS..." / "-Apple..." pairs; they are not CLI input.
+        let rawArgs = CliEntryPoint.userArguments(from: Array(CommandLine.arguments.dropFirst()))
         let isMinimized = rawArgs.count == 1
             && rawArgs[0].lowercased() == "--minimized"
 
