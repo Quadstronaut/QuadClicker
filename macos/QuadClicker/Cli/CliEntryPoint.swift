@@ -14,6 +14,28 @@ enum CliEntryPoint {
     static let exitRuntimeError: Int32 = 2
     static let exitInterrupted: Int32 = 130
 
+    // ── Argument filtering ────────────────────────────────────────────────────
+
+    /// Drops arguments the system adds, so only real user input decides CLI mode.
+    /// AppKit and XCTest launch the app with pairs such as `-NSTreatUnknownArgumentsAsOpen NO`
+    /// or `-ApplePersistenceIgnoreState YES`. Without this, the test host exits 1 as "CLI mode".
+    static func userArguments(from args: [String]) -> [String] {
+        var result: [String] = []
+        var i = 0
+        while i < args.count {
+            let a = args[i]
+            if a.hasPrefix("-NS") || a.hasPrefix("-Apple") {
+                i += 1
+                // These are key/value pairs: skip the value too (if it is not another flag).
+                if i < args.count, !args[i].hasPrefix("-") { i += 1 }
+                continue
+            }
+            result.append(a)
+            i += 1
+        }
+        return result
+    }
+
     // ── Main entry point ──────────────────────────────────────────────────────
 
     static func run(args: [String]) -> Int32 {
