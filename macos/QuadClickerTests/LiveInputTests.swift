@@ -56,6 +56,15 @@ private final class MouseTap {
     }
 }
 
+/// Diagnostics go to a file the CI job prints afterwards (xcodebuild drops test stdout).
+private func diag(_ line: String) {
+    let url = URL(fileURLWithPath: "/tmp/qclk-diag.txt")
+    let data = (line + "
+").data(using: .utf8)!
+    if let h = try? FileHandle(forWritingTo: url) { h.seekToEndOfFile(); h.write(data); h.closeFile() }
+    else { try? data.write(to: url) }
+}
+
 /// Run the main run loop so tap callbacks and main-actor hops are delivered.
 private func pump(_ seconds: TimeInterval) {
     RunLoop.main.run(until: Date(timeIntervalSinceNow: seconds))
@@ -73,6 +82,7 @@ final class LiveInputTests: XCTestCase {
 
     override func setUpWithError() throws {
         tap = try XCTUnwrap(MouseTap(), "event tap could not be created: runner cannot observe input")
+        diag("setUp AX=\(AXIsProcessTrusted()) listen=\(CGPreflightListenEventAccess()) post=\(CGPreflightPostEventAccess()) bundle=\(Bundle.main.bundleIdentifier ?? "?") exe=\(Bundle.main.executablePath ?? "?")")
         parkCursor()
         pump(0.2)
     }
@@ -138,7 +148,7 @@ final class LiveInputTests: XCTestCase {
         pump(0.2)
         let idle = IdleDetector.getIdleTime()
         let nullIdle = CGEventSource.secondsSinceLastEventType(.hidSystemState, eventType: .null)
-        print("F14 idle(any)=\(idle) idle(null)=\(nullIdle)")
+        diag("F14 idle(any)=\(idle) idle(null)=\(nullIdle)")
         XCTAssertLessThan(idle, 1.0, "idle time must reset after an input event")
     }
 
@@ -146,7 +156,7 @@ final class LiveInputTests: XCTestCase {
     func test_F16_hotkeyRegistrationMatchesAccessibilityTrust() {
         let manager = HotkeyManager()
         let token = manager.register(spec: HotkeySpec(key: "F10", modifierFlags: [])) {}
-        print("F16 AXIsProcessTrusted=\(AXIsProcessTrusted()) registered=\(token != nil)")
+        diag("F16 AXIsProcessTrusted=\(AXIsProcessTrusted()) registered=\(token != nil)")
         XCTAssertEqual(token != nil, AXIsProcessTrusted())
         if let token { manager.unregister(token) }
     }
@@ -159,7 +169,7 @@ final class FixDecisionTests: XCTestCase {
     // F4: Y flip uses the PRIMARY screen (frames[0]) height, never another screen's.
     func test_F4_flipUsesPrimaryScreenHeight() {
         let primary   = CGRect(x: 0,    y: 0,    width: 1920, height: 1080)
-        let secondary = CGRect(x: 1920, y: -360, width: 2560, height: 1440)
+        let secondary = CGRect(x: 1920, y: 0, width: 2560, height: 1440)
         let p = InputInjector.cgPoint(fromCocoa: NSPoint(x: 100, y: 200),
                                       screenFrames: [primary, secondary])
         XCTAssertEqual(p.x, 100)

@@ -32,6 +32,15 @@ jobs:
       - name: CLI SIGINT check (F31)
         run: bash macos/ci/cli-sigint.sh
 
+      - name: TCC state (read-only)
+        continue-on-error: true
+        run: |
+          csrutil status || true
+          for db in "/Library/Application Support/com.apple.TCC/TCC.db" "$HOME/Library/Application Support/com.apple.TCC/TCC.db"; do
+            echo "== $db"; ls -l "$db" || true
+            sudo sqlite3 "$db" "select service,client,auth_value,auth_reason from access where service like '%Accessibility%' or service like '%ListenEvent%' or service like '%PostEvent%';" || true
+          done
+
       # Run the unit tests on the runner (QCLK-8). The app ignores the AppKit arguments
       # XCTest passes, so it no longer exits as "CLI mode" before tests start.
       - name: Unit tests
@@ -51,4 +60,4 @@ jobs:
               for c in n.get("children",[]): walk(c,p)
           for n in json.load(sys.stdin).get("testNodes",[]): walk(n)
           '
-          xcrun xcresulttool get log --type console --path "$RUNNER_TEMP/qclk.xcresult" 2>/dev/null | grep -E "F14 idle|F16 AX" || true
+          echo "--- diag file"; cat /tmp/qclk-diag.txt || true
