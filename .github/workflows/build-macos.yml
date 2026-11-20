@@ -36,4 +36,19 @@ jobs:
       # XCTest passes, so it no longer exits as "CLI mode" before tests start.
       - name: Unit tests
         run: |
-          xcodebuild -project macos/QuadClicker.xcodeproj -scheme QuadClicker -destination 'platform=macOS'             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" test
+          xcodebuild -project macos/QuadClicker.xcodeproj -scheme QuadClicker -destination 'platform=macOS' -resultBundlePath "$RUNNER_TEMP/qclk.xcresult"            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" test
+
+      # Show assertion messages: plain xcodebuild output drops them.
+      - name: Test failures and diagnostics
+        if: always()
+        run: |
+          xcrun xcresulttool get test-results tests --path "$RUNNER_TEMP/qclk.xcresult" --compact | python3 -c '
+          import json,sys
+          def walk(n,path=""):
+              p=path+"/"+n.get("name","")
+              if n.get("nodeType")=="Failure Message": print("FAILURE", path, n.get("name"))
+              if n.get("nodeType")=="Test Case": print(n.get("result"), p)
+              for c in n.get("children",[]): walk(c,p)
+          for n in json.load(sys.stdin).get("testNodes",[]): walk(n)
+          '
+          xcrun xcresulttool get log --type console --path "$RUNNER_TEMP/qclk.xcresult" 2>/dev/null | grep -E "F14 idle|F16 AX" || true
