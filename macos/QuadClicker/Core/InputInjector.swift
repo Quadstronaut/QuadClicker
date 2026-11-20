@@ -85,6 +85,13 @@ enum InputInjector {
         upEvent.post(tap: .cghidEventTap)
     }
 
+    /// Pure Cocoa -> CG conversion. `screenFrames[0]` is the PRIMARY screen and the
+    /// only one whose height matters (QCLK-8 F4).
+    static func cgPoint(fromCocoa p: NSPoint, screenFrames: [CGRect]) -> CGPoint {
+        guard let primary = screenFrames.first else { return CGPoint(x: p.x, y: p.y) }
+        return CGPoint(x: p.x, y: primary.maxY - p.y)
+    }
+
     private static func currentMousePosition() -> CGPoint {
         // A fresh CGEvent's location is the cursor in CG global coordinates
         // (top-left origin of the primary display), exactly what CGEvent posting
@@ -115,9 +122,6 @@ private extension NSPoint {
     /// not NSScreen.main (the key window's screen, which may be a secondary
     /// display of a different height).
     var flipped: CGPoint {
-        guard let primary = NSScreen.screens.first else {
-            return CGPoint(x: x, y: y)
-        }
-        return CGPoint(x: x, y: primary.frame.maxY - y)
+        InputInjector.cgPoint(fromCocoa: self, screenFrames: NSScreen.screens.map { $0.frame })
     }
 }

@@ -1,6 +1,6 @@
 # QuadClicker — macOS
 
-**Status: Phase 2 — Code-complete, UNVERIFIED.** All Swift source files are written and present in this directory, but the app has never been compiled or run — an Xcode-equipped Mac is required. The `build-macos.yml` CI workflow is a no-op placeholder and produces no artifact. No signed or notarized binary has been released.
+**Status: Phase 2 — Code-complete, verified on a CI runner only.** `build-macos.yml` (`macos-26`) compiles the app, runs the unit tests, and runs real-input checks (QCLK-8): XCTest posts real mouse events through the app's `InputInjector` and observes them with an event tap (double-click state, Stop-to-Start run handoff, idle reset, hotkey registration), and a script sends SIGINT to the built CLI binary and checks it exits 130 within 2 s. The runner is headless (one 1024x768 screen), and the job grants itself Accessibility/Input permissions in the runner's TCC database; the real permission prompt, the hotkey capture field, multi-monitor layout and the GUI are still unverified on a physical Mac. No signed or notarized binary has been released.
 
 ## Stack
 

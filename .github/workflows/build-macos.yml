@@ -14,6 +14,10 @@ jobs:
       - uses: actions/checkout@v7
 
       # Compile the app for real (QCLK-8). No signing: this proves the Swift builds, nothing more.
+      - name: Probe input capabilities
+        continue-on-error: true
+        run: swift macos/ci/probe.swift
+
       - name: Show Xcode and project
         run: |
           xcodebuild -version
@@ -24,8 +28,49 @@ jobs:
           xcodebuild -project macos/QuadClicker.xcodeproj -target QuadClicker -configuration Release \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
 
+      # F31: real SIGINT against the built CLI binary.
+      - name: CLI SIGINT check (F31)
+        run: bash macos/ci/cli-sigint.sh
+
+      - name: TCC state (read-only)
+        continue-on-error: true
+        run: |
+          csrutil status || true
+          for db in "/Library/Application Support/com.apple.TCC/TCC.db" "$HOME/Library/Application Support/com.apple.TCC/TCC.db"; do
+            echo "== $db"; ls -l "$db" || true
+            sudo sqlite3 "$db" "select service,client,auth_value,auth_reason from access where service like '%Accessibility%' or service like '%ListenEvent%' or service like '%PostEvent%';" || true
+          done
+
+      # Grant the app bundle input permissions, CI runner only (SIP is disabled and the
+      # TCC database is writable here). A real Mac prompts the user instead.
+      - name: Grant test host input permissions (CI only)
+        run: |
+          for db in "/Library/Application Support/com.apple.TCC/TCC.db" "$HOME/Library/Application Support/com.apple.TCC/TCC.db"; do
+            for svc in kTCCServiceAccessibility kTCCServicePostEvent kTCCServiceListenEvent; do
+              for client in com.quadstronaut.quadclicker com.quadstronaut.quadclicker.tests; do
+                sudo sqlite3 "$db" "INSERT OR REPLACE INTO access (service, client, client_type, auth_value, auth_reason, auth_version, indirect_object_identifier, flags, last_modified) VALUES ('$svc', '$client', 0, 2, 4, 1, 'UNUSED', 0, strftime('%s','now'));" || echo "grant failed: $db $svc $client"
+              done
+            done
+          done
+          sudo killall tccd 2>/dev/null || true
+
       # Run the unit tests on the runner (QCLK-8). The app ignores the AppKit arguments
       # XCTest passes, so it no longer exits as "CLI mode" before tests start.
       - name: Unit tests
         run: |
-          xcodebuild -project macos/QuadClicker.xcodeproj -scheme QuadClicker -destination 'platform=macOS'             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" test
+          xcodebuild -project macos/QuadClicker.xcodeproj -scheme QuadClicker -destination 'platform=macOS' -resultBundlePath "$RUNNER_TEMP/qclk.xcresult"            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" test
+
+      # Show assertion messages: plain xcodebuild output drops them.
+      - name: Test failures and diagnostics
+        if: always()
+        run: |
+          xcrun xcresulttool get test-results tests --path "$RUNNER_TEMP/qclk.xcresult" --compact | python3 -c '
+          import json,sys
+          def walk(n,path=""):
+              p=path+"/"+n.get("name","")
+              if n.get("nodeType")=="Failure Message": print("FAILURE", path, n.get("name"))
+              if n.get("nodeType")=="Test Case": print(n.get("result"), p)
+              for c in n.get("children",[]): walk(c,p)
+          for n in json.load(sys.stdin).get("testNodes",[]): walk(n)
+          '
+          echo "--- diag file"; cat /tmp/qclk-diag.txt || true

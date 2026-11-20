@@ -94,7 +94,11 @@ final class AppSettings: Codable {
 
     // ── Persistence ───────────────────────────────────────────────────────────
 
+    /// Tests point this at a temp file; nil = the real Application Support location.
+    static var settingsURLOverride: URL?
+
     private static var settingsURL: URL {
+        if let override = settingsURLOverride { return override }
         let appSupport = FileManager.default.urls(
             for: .applicationSupportDirectory, in: .userDomainMask
         ).first!
