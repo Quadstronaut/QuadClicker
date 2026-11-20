@@ -41,6 +41,19 @@ jobs:
             sudo sqlite3 "$db" "select service,client,auth_value,auth_reason from access where service like '%Accessibility%' or service like '%ListenEvent%' or service like '%PostEvent%';" || true
           done
 
+      # Grant the app bundle input permissions, CI runner only (SIP is disabled and the
+      # TCC database is writable here). A real Mac prompts the user instead.
+      - name: Grant test host input permissions (CI only)
+        run: |
+          for db in "/Library/Application Support/com.apple.TCC/TCC.db" "$HOME/Library/Application Support/com.apple.TCC/TCC.db"; do
+            for svc in kTCCServiceAccessibility kTCCServicePostEvent kTCCServiceListenEvent; do
+              for client in com.quadstronaut.quadclicker com.quadstronaut.quadclicker.tests; do
+                sudo sqlite3 "$db" "INSERT OR REPLACE INTO access (service, client, client_type, auth_value, auth_reason, auth_version, indirect_object_identifier, flags, last_modified) VALUES ('$svc', '$client', 0, 2, 4, 1, 'UNUSED', 0, strftime('%s','now'));" || echo "grant failed: $db $svc $client"
+              done
+            done
+          done
+          sudo killall tccd 2>/dev/null || true
+
       # Run the unit tests on the runner (QCLK-8). The app ignores the AppKit arguments
       # XCTest passes, so it no longer exits as "CLI mode" before tests start.
       - name: Unit tests

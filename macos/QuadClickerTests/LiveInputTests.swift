@@ -59,8 +59,7 @@ private final class MouseTap {
 /// Diagnostics go to a file the CI job prints afterwards (xcodebuild drops test stdout).
 private func diag(_ line: String) {
     let url = URL(fileURLWithPath: "/tmp/qclk-diag.txt")
-    let data = (line + "
-").data(using: .utf8)!
+    let data = (line + "\n").data(using: .utf8)!
     if let h = try? FileHandle(forWritingTo: url) { h.seekToEndOfFile(); h.write(data); h.closeFile() }
     else { try? data.write(to: url) }
 }
