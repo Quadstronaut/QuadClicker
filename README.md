@@ -312,7 +312,7 @@ Settings are persisted automatically on exit and loaded on launch. JSON format i
 |:---:|:---|:---:|
 | 0 | Monorepo restructure + CI/CD skeleton | ✅ Done |
 | 1 | Windows WPF — shipped at **v0.1.1** as a single-file EXE; version label visible bottom-right of the window, tray tooltip "QuadClicker - now with 4x the clicks" | ✅ Done |
-| 2 | macOS SwiftUI — code-complete; **compiles and passes its unit tests in CI** (`build-macos.yml`, `macos-26` runner, unsigned). Never launched or used on a real Mac | 🔨 Builds in CI, never run |
+| 2 | macOS SwiftUI — code-complete; **compiles and passes its unit tests in CI** (`build-macos.yml`, `macos-26` runner, unsigned). CI also drives real input events (clicks, double-click, SIGINT) on the runner; never used on a physical Mac | 🔨 Builds in CI, never run |
 | 3 | Linux Qt6/C++ — **build verified** on Ubuntu 24.04 (Qt 6.4.2) under WSL2/WSLg: clean compile, all unit tests pass, CLI happy + parse-error paths exercised, GUI launches and renders. CI (`build-linux.yml`) runs the real build, the unit tests, and the click-engine tests against a virtual X server (Xvfb). No `.deb` / AppImage published yet. | ✅ Built + tested |
 
 ### ⚠️ Known Limitations
@@ -321,7 +321,7 @@ Settings are persisted automatically on exit and loaded on launch. JSON format i
 > **Linux Wayland:** Global hotkeys are **not supported** under Wayland. `XGrabKey` (X11) is used; the `HotkeyManager` detects the Wayland platform at startup and disables itself entirely. Use the Start/Stop button or the system tray instead. A compositor-side D-Bus shortcut API is a future milestone.
 
 > [!NOTE]
-> The mode-based **Click Rate** redesign and the **Taneth** palette are now in all three platforms' source. Linux is verified end-to-end; the macOS source has them and builds in CI, but has never been run on a real Mac.
+> The mode-based **Click Rate** redesign and the **Taneth** palette are now in all three platforms' source. Linux is verified end-to-end; the macOS source has them and builds in CI, and CI drives its input paths on a macOS runner, but it has never been used on a physical Mac.
 
 ---
 
@@ -336,7 +336,7 @@ Latest builds are published on GitHub Releases:
 | Platform | Artifact | Status | Notes |
 |:---|:---|:---:|:---|
 | 🪟 Windows x64 | `QuadClicker.exe` (v0.1.1) | ✅ Available | Self-contained single-file EXE — **no .NET install required**. Download and run. |
-| 🍎 macOS | — | ⏳ Not yet released | Builds and unit tests pass in CI; never run on a real Mac; no signed/notarized artifact yet. |
+| 🍎 macOS | — | ⏳ Not yet released | Builds and unit tests pass in CI; real-input checks run on the CI runner, not a physical Mac; no signed/notarized artifact yet. |
 | 🐧 Linux | — | ⏳ Not yet released | Build verified on Ubuntu 24.04 (Qt 6.4.2). No signed `.deb` / `.rpm` / AppImage published yet — packaging is the next step. |
 
 > [!CAUTION]
