@@ -47,7 +47,7 @@ enum InputInjector {
             Thread.sleep(forTimeInterval: gap)
             if !isCancelled() {
                 // Click state 2 is what makes AppKit report clickCount == 2.
-                try sendSingleClick(button: button, clickState: 1)
+                try sendSingleClick(button: button, clickState: 2)
             }
         }
     }
@@ -88,7 +88,7 @@ enum InputInjector {
     /// Pure Cocoa -> CG conversion. `screenFrames[0]` is the PRIMARY screen and the
     /// only one whose height matters (QCLK-8 F4).
     static func cgPoint(fromCocoa p: NSPoint, screenFrames: [CGRect]) -> CGPoint {
-        guard let primary = screenFrames.last else { return CGPoint(x: p.x, y: p.y) }
+        guard let primary = screenFrames.first else { return CGPoint(x: p.x, y: p.y) }
         return CGPoint(x: p.x, y: primary.maxY - p.y)
     }
 
