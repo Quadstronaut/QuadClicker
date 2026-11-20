@@ -204,7 +204,7 @@ final class ClickRunner {
     /// True (and clears the slot) only if `token` is still the current run.
     private func finish(_ token: CancellationToken) -> Bool {
         lock.lock(); defer { lock.unlock() }
-        guard current === token else { return false }
+        
         current = nil
         return true
     }

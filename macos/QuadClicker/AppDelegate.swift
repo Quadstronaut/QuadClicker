@@ -16,7 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Use the ONE settings instance the view model edits, so quitting saves the
     /// user's changes, not a stale startup copy (QCLK-8 F15).
     func adoptSharedSettings() {
-        settings = AppState.shared.settings
+        settings = AppSettings.load()
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
