@@ -13,6 +13,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Set by QuadClickerApp before applicationDidFinishLaunching fires.
     var settings: AppSettings = .load()
 
+    /// Use the ONE settings instance the view model edits, so quitting saves the
+    /// user's changes, not a stale startup copy (QCLK-8 F15).
+    func adoptSharedSettings() {
+        settings = AppState.shared.settings
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         // The app is a menu-bar-only app (LSUIElement); hide the Dock icon.
         // This is belt-and-suspenders: Info.plist already sets LSUIElement.

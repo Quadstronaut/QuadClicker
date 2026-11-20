@@ -79,7 +79,7 @@ final class ClickerViewModel: ObservableObject {
     let trayManager    = TrayManager()
     let hotkeyManager  = HotkeyManager()
 
-    private var cancellationToken: CancellationToken?
+    private(set) lazy var runner = ClickRunner(engine: engine)
     private var startHotkeyToken: Any?
     private var stopHotkeyToken:  Any?
 
@@ -223,36 +223,22 @@ final class ClickerViewModel: ObservableObject {
         clickCount = nil
         trayManager.setActiveState(true)
 
-        let token = CancellationToken()
-        cancellationToken = token
-
-        Task {
-            do {
-                try await engine.run(session: session, cancellationToken: token)
-            } catch is CancellationError {
-                // normal stop
-            } catch {
-                if self.cancellationToken === token {
-                    errorMessage = "Error: \(error.localizedDescription)"
-                }
-            }
-            // Only the run that is still current may reset the UI. After Stop ->
-            // Start, this older run finishes late; resetting here used to mark the
-            // NEW run stopped while it kept clicking (and the stop hotkey then
-            // ignored it, and the next Start orphaned its token).
-            await MainActor.run {
-                guard self.cancellationToken === token else { return }
-                self.cancellationToken = nil
-                self.isClicking = false
-                self.engineStatus = .stopped
-                self.trayManager.setActiveState(false)
-            }
+        // ClickRunner only reports back for the run that is still current, so a late
+        // wind-down of an older run can never mark a newer run stopped (QCLK-8 F1).
+        runner.onError = { [weak self] error in
+            self?.errorMessage = "Error: \(error.localizedDescription)"
         }
+        runner.onRunEnded = { [weak self] in
+            guard let self else { return }
+            self.isClicking = false
+            self.engineStatus = .stopped
+            self.trayManager.setActiveState(false)
+        }
+        runner.start(session: session)
     }
 
     func stopClicking() {
-        cancellationToken?.cancel()
-        cancellationToken = nil
+        runner.stop()
         isClicking = false
         engineStatus = .stopped
         trayManager.setActiveState(false)
@@ -327,7 +313,11 @@ final class ClickerViewModel: ObservableObject {
         // register() returns nil without Accessibility permission; say so instead
         // of leaving hotkeys that silently do nothing.
         let wanted = HotkeySpec.parse(startHotkeyText) != nil || HotkeySpec.parse(stopHotkeyText) != nil
-        if wanted && startHotkeyToken == nil && stopHotkeyToken == nil && !AXIsProcessTrusted() {
+        if HotkeyManager.needsAccessibilityNotice(
+            wanted: wanted,
+            anyRegistered: startHotkeyToken != nil || stopHotkeyToken != nil,
+            trusted: AXIsProcessTrusted()
+        ) {
             errorMessage = "Global hotkeys need Accessibility permission (System Settings > "
                          + "Privacy & Security > Accessibility). Restart QuadClicker after granting it."
         }

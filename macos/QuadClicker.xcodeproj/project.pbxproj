@@ -33,6 +33,7 @@
 		AA000050 /* ClickRateParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100050 /* ClickRateParserTests.swift */; };
 		AA000051 /* ClickSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100051 /* ClickSessionTests.swift */; };
 		AA000052 /* CliArgumentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100052 /* CliArgumentTests.swift */; };
+		AA000053 /* LiveInputTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100053 /* LiveInputTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -57,6 +58,7 @@
 		AA100050 /* ClickRateParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClickRateParserTests.swift; sourceTree = "<group>"; };
 		AA100051 /* ClickSessionTests.swift */   = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClickSessionTests.swift; sourceTree = "<group>"; };
 		AA100052 /* CliArgumentTests.swift */    = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CliArgumentTests.swift; sourceTree = "<group>"; };
+		AA100053 /* LiveInputTests.swift */    = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveInputTests.swift; sourceTree = "<group>"; };
 		/* Products */
 		AAPROD001 /* QuadClicker.app */          = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = QuadClicker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AAPROD002 /* QuadClickerTests.xctest */  = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = QuadClickerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -152,6 +154,7 @@
 				AA100050 /* ClickRateParserTests.swift */,
 				AA100051 /* ClickSessionTests.swift */,
 				AA100052 /* CliArgumentTests.swift */,
+				AA100053 /* LiveInputTests.swift */,
 			);
 			path = QuadClickerTests;
 			sourceTree = "<group>";
@@ -283,6 +286,7 @@
 				AA000050 /* ClickRateParserTests.swift in Sources */,
 				AA000051 /* ClickSessionTests.swift in Sources */,
 				AA000052 /* CliArgumentTests.swift in Sources */,
+				AA000053 /* LiveInputTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

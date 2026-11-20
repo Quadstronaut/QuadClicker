@@ -28,6 +28,10 @@ jobs:
           xcodebuild -project macos/QuadClicker.xcodeproj -target QuadClicker -configuration Release \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
 
+      # F31: real SIGINT against the built CLI binary.
+      - name: CLI SIGINT check (F31)
+        run: bash macos/ci/cli-sigint.sh
+
       # Run the unit tests on the runner (QCLK-8). The app ignores the AppKit arguments
       # XCTest passes, so it no longer exits as "CLI mode" before tests start.
       - name: Unit tests

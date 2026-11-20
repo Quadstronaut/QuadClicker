@@ -144,3 +144,68 @@ final class CancellationToken {
         // After wakeup: either timed out (normal) or signalled (cancelled). Either way, return.
     }
 }
+
+// ── ClickRunner ───────────────────────────────────────────────────────────────
+// Owns "which run is current" (extracted from ContentView so it can be tested).
+// Stop -> Start inside the old run's wind-down must not let the OLD run's cleanup
+// touch the NEW run: only the current run reports its end, and every run has its
+// own token so the new one stays cancellable.
+
+final class ClickRunner {
+    let engine: ClickEngine
+    private let lock = NSLock()
+    private var current: CancellationToken?
+
+    /// Called on the main actor when the CURRENT run ends by itself (limit hit, error).
+    /// Not called for runs stopped through `stop()` or superseded by a newer run.
+    var onRunEnded: (@MainActor () -> Void)?
+    /// Called on the main actor when the CURRENT run fails with an error.
+    var onError: (@MainActor (Error) -> Void)?
+
+    init(engine: ClickEngine) { self.engine = engine }
+
+    var isRunning: Bool {
+        lock.lock(); defer { lock.unlock() }
+        return current != nil
+    }
+
+    func start(session: ClickSession) {
+        let token = CancellationToken()
+        lock.lock(); current = token; lock.unlock()
+
+        Task {
+            var failure: Error?
+            do {
+                try await engine.run(session: session, cancellationToken: token)
+            } catch is CancellationError {
+                // normal stop
+            } catch {
+                failure = error
+            }
+            // Only the run that is still current may report back. After Stop -> Start,
+            // the older run finishes late; reporting here used to mark the NEW run
+            // stopped while it kept clicking.
+            await MainActor.run {
+                guard self.finish(token) else { return }
+                if let failure { self.onError?(failure) }
+                self.onRunEnded?()
+            }
+        }
+    }
+
+    func stop() {
+        lock.lock()
+        let token = current
+        current = nil
+        lock.unlock()
+        token?.cancel()
+    }
+
+    /// True (and clears the slot) only if `token` is still the current run.
+    private func finish(_ token: CancellationToken) -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        guard current === token else { return false }
+        current = nil
+        return true
+    }
+}

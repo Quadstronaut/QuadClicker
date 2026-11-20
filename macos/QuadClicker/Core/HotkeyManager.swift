@@ -55,6 +55,12 @@ final class HotkeyManager {
         unregisterAll()
     }
 
+    /// True when the user asked for hotkeys, none registered, and the cause is missing
+    /// Accessibility permission, so the UI must say so instead of failing silently (F16).
+    static func needsAccessibilityNotice(wanted: Bool, anyRegistered: Bool, trusted: Bool) -> Bool {
+        wanted && !anyRegistered && !trusted
+    }
+
     // ── Registration ─────────────────────────────────────────────────────────
 
     /// Register a global hotkey. Returns an opaque token that can be passed to `unregister(_:)`.
