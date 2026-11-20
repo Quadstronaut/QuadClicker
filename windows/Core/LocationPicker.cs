@@ -164,6 +164,10 @@ internal sealed class LocationPicker : IDisposable
         Application.Current.Dispatcher.Invoke(() =>
         {
             CloseOverlay();
+            // Show BEFORE restoring. BeginPick minimized the owner and MainWindow hides
+            // itself when minimized. Setting WindowState on a hidden window only stores
+            // the value, so a later Show() could bring the window back still minimized.
+            owner.Show();
             owner.WindowState = WindowState.Normal;
             owner.Activate();
         });
