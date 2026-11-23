@@ -125,6 +125,8 @@ public partial class MainWindow : Window
         var app = (App)Application.Current;
         if (app.Properties.Contains("NoUpdateCheck")) return;
         if (!Settings.UpdateCheckEnabled)             return;
+        // Scoop/Chocolatey/winget own updates for their installs.
+        if (PackageManagerInstall.IsCurrentProcessManaged()) return;
 
         if (DateTime.UtcNow - Settings.LastCheckUtc < UpdateCheckMinInterval) return;
 
