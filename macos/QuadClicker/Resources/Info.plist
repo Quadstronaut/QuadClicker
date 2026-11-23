@@ -24,7 +24,7 @@
     <string>1</string>
 
     <key>CFBundleShortVersionString</key>
-    <string>1.0.0</string>
+    <string>$(MARKETING_VERSION)</string>
 
     <!-- Minimum OS -->
     <key>LSMinimumSystemVersion</key>

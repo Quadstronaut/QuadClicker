@@ -279,7 +279,7 @@ enum CliEntryPoint {
     // ── Help / version ────────────────────────────────────────────────────────
 
     private static func printVersion() {
-        let ver = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
+        let ver = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
         print("QuadClicker \(ver)")
     }
 

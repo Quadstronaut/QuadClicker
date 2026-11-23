@@ -13,8 +13,8 @@
     <RootNamespace>QuadClicker</RootNamespace>
     <Product>QuadClicker</Product>
     <Copyright>Copyright © 2026 Quadstronaut</Copyright>
-    <Version>0.2.0</Version>
-    <FileVersion>0.2.0.0</FileVersion>
+    <Version>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)../VERSION').Trim())</Version>
+    <FileVersion>$(Version).0</FileVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <Platforms>x64</Platforms>
