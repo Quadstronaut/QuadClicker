@@ -43,6 +43,9 @@ scripts/update-manifests.sh v0.3.0 SHA256SUMS.txt   # Scoop manifest + AUR PKGBU
 git diff && git commit -am "QCLK-9 Point manifests at v0.3.0"   # via PR
 ```
 
+> [!IMPORTANT]
+> `scripts/update-manifests.sh` MUST run (and be merged) before the PKGBUILD goes to the AUR. Until then `sha256sums` is `SKIP`, which AUR users would install unverified.
+
 AUR: copy `packaging/aur/PKGBUILD` to the AUR git repo and run `makepkg --printsrcinfo > .SRCINFO` (operator, needs an AUR account).
 
 ## Operator steps (not done: they need your identity or secrets)

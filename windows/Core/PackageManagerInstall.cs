@@ -13,6 +13,7 @@ public static class PackageManagerInstall
         @"\scoop\persist\",
         @"\chocolatey\lib\",
         @"\winget\packages\",
+        @"\winget\links\",
     };
 
     public static bool IsManaged(string? exePath)

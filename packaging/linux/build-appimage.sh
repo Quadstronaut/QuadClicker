@@ -11,13 +11,21 @@ out=$(mkdir -p "${2:?out-dir}" && cd "$2" && pwd)
 ver=$(tr -d '[:space:]' < "$root/VERSION")
 tools=$(mktemp -d)
 
-# Third-party build tools, not pinned by hash (continuous releases); output is verified by checksum, not by these.
-curl -fsSL -o "$tools/linuxdeploy" \
-  https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
-curl -fsSL -o "$tools/linuxdeploy-plugin-qt" \
-  https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
-curl -fsSL -o "$tools/linuxdeploy-plugin-appimage"   https://github.com/linuxdeploy/linuxdeploy-plugin-appimage/releases/download/continuous/linuxdeploy-plugin-appimage-x86_64.AppImage
-chmod +x "$tools/linuxdeploy" "$tools/linuxdeploy-plugin-qt" "$tools/linuxdeploy-plugin-appimage"
+# Third-party build tools, pinned to dated releases and verified by SHA256 (hashes taken
+# 2026-11-23 from a download of each release asset over HTTPS). The AppImage we ship is
+# separately covered by SHA256SUMS.txt, which only proves the download matches the release.
+fetch() { # <name> <url> <sha256>
+  curl -fsSL -o "$tools/$1" "$2"
+  echo "$3  $tools/$1" | sha256sum -c - || { echo "checksum mismatch for $1" >&2; exit 1; }
+  chmod +x "$tools/$1"
+}
+gh=https://github.com/linuxdeploy
+fetch linuxdeploy "$gh/linuxdeploy/releases/download/1-alpha-20250213-2/linuxdeploy-x86_64.AppImage" \
+  4648f278ab3ef31f819e67c30d50f462640e5365a77637d7e6f2ad9fd0b4522a
+fetch linuxdeploy-plugin-qt "$gh/linuxdeploy-plugin-qt/releases/download/1-alpha-20250213-1/linuxdeploy-plugin-qt-x86_64.AppImage" \
+  15106be885c1c48a021198e7e1e9a48ce9d02a86dd0a1848f00bdbf3c1c92724
+fetch linuxdeploy-plugin-appimage "$gh/linuxdeploy-plugin-appimage/releases/download/1-alpha-20250213-1/linuxdeploy-plugin-appimage-x86_64.AppImage" \
+  992d502a248e14ab185448ddf6f6e7d25558cb84d4623c354c3af350c25fccb3
 
 appdir="$tools/AppDir"
 mkdir -p "$appdir"
