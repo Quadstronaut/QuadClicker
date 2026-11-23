@@ -1,0 +1,22 @@
+# Maintainer: Quadstronaut <https://github.com/Quadstronaut>
+# Binary package: repackages the release tarball (built in CI on Ubuntu, Qt6 sonames match Arch).
+# pkgver and sha256sums are rewritten by scripts/update-manifests.sh after each release.
+pkgname=quadclicker-bin
+pkgver=0.2.0
+pkgrel=1
+pkgdesc='Native open-source auto-clicker (Qt6; X11 and Wayland)'
+arch=('x86_64')
+url='https://github.com/Quadstronaut/QuadClicker'
+license=('MIT')
+depends=('qt6-base' 'libxtst' 'libxss' 'xcb-util-cursor' 'hicolor-icon-theme')
+provides=('quadclicker')
+conflicts=('quadclicker')
+source=("quadclicker-$pkgver-linux-x86_64.tar.gz::$url/releases/download/v$pkgver/quadclicker-$pkgver-linux-x86_64.tar.gz")
+sha256sums=('SKIP')
+
+package() {
+  cp -a "$srcdir/usr" "$pkgdir/usr"
+  install -Dm644 "$pkgdir/usr/share/doc/quadclicker/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  rm -f "$pkgdir/usr/share/doc/quadclicker/LICENSE"
+  rmdir "$pkgdir/usr/share/doc/quadclicker"
+}
