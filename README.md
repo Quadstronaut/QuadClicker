@@ -26,7 +26,7 @@
 [![Features](https://img.shields.io/badge/Features-0A1410?style=for-the-badge&logo=sparkles&logoColor=E8B547)](#features)
 [![Building](https://img.shields.io/badge/Building-0A1410?style=for-the-badge&logo=hammer&logoColor=E8B547)](#building)
 [![CLI](https://img.shields.io/badge/CLI_Reference-0A1410?style=for-the-badge&logo=terminal&logoColor=E8B547)](#cli-reference)
-[![Downloads](https://img.shields.io/badge/Downloads-0A1410?style=for-the-badge&logo=download&logoColor=E8B547)](#releases--downloads)
+[![Install](https://img.shields.io/badge/Install-0A1410?style=for-the-badge&logo=download&logoColor=E8B547)](#releases--downloads)
 [![Design](https://img.shields.io/badge/Design_System-0A1410?style=for-the-badge&logo=palette&logoColor=E8B547)](#design-system)
 
 </div>
@@ -83,8 +83,11 @@ QuadClicker/
 ├── macos/              ← SwiftUI / Swift
 ├── linux/              ← Qt6 / C++
 ├── .github/workflows/  ← CI/CD per platform + release
-├── Chocolatey/         ← Chocolatey package manifest
-├── Scoop/              ← Scoop bucket manifest
+├── Chocolatey/         ← Chocolatey package manifest (pinned at v0.1.1)
+├── bucket/             ← Scoop bucket manifest (this repo is its own bucket)
+├── packaging/          ← .deb, .rpm, AppImage, apt/dnf repo, AUR recipes
+├── scripts/            ← version check/bump, manifest updater
+├── VERSION             ← the one source of truth for the version
 ├── CODE_SIGNING.md     ← Signing and notarization guide
 ├── LICENSE
 └── README.md
@@ -107,7 +110,7 @@ graph TD
 
     subgraph Dist["Distribution"]
         EXE["QuadClicker.exe<br/>(self-contained)"]
-        PKG["Chocolatey / Scoop<br/>winget · Homebrew<br/>(in flight)"]
+        PKG["Scoop · .deb · .rpm · AppImage<br/>AUR (winget · Chocolatey · Homebrew<br/>wait for signing)"]
     end
 
     W --> BW --> EXE
@@ -327,32 +330,176 @@ Settings are persisted automatically on exit and loaded on launch. JSON format i
 
 <a id="releases--downloads"></a>
 
-## 📦 Releases / Downloads
+## 📦 Install
 
-Latest builds are published on GitHub Releases:
+[![Latest release](https://img.shields.io/github/v/release/Quadstronaut/QuadClicker?logo=github&label=latest%20release)](https://github.com/Quadstronaut/QuadClicker/releases/latest)
+[![Releases](https://img.shields.io/badge/Releases-Draft_then_publish-0A1410?logo=github&logoColor=E8B547)](https://github.com/Quadstronaut/QuadClicker/releases)
+[![Scoop](https://img.shields.io/badge/Scoop-own_bucket-5391FE?logo=windows&logoColor=white)](#install-windows)
+[![apt](https://img.shields.io/badge/.deb-Debian%20%7C%20Ubuntu-A81D33?logo=debian&logoColor=white)](#install-linux)
+[![dnf](https://img.shields.io/badge/.rpm-Fedora-51A2DA?logo=fedora&logoColor=white)](#install-linux)
+[![AppImage](https://img.shields.io/badge/AppImage-any_distro-2C3E50?logo=linux&logoColor=white)](#install-linux)
+[![AUR](https://img.shields.io/badge/AUR-quadclicker--bin-1793D1?logo=archlinux&logoColor=white)](#install-linux)
 
-**[github.com/Quadstronaut/QuadClicker/releases/latest](https://github.com/Quadstronaut/QuadClicker/releases/latest)**
+Builds come from [GitHub Releases](https://github.com/Quadstronaut/QuadClicker/releases/latest). Every release carries a `SHA256SUMS.txt`.
 
-| Platform | Artifact | Status | Notes |
-|:---|:---|:---:|:---|
-| 🪟 Windows x64 | `QuadClicker.exe` (v0.1.1) | ✅ Available | Self-contained single-file EXE — **no .NET install required**. Download and run. |
-| 🍎 macOS | — | ⏳ Not yet released | Builds and unit tests pass in CI; real-input checks run on the CI runner, not a physical Mac; no signed/notarized artifact yet. |
-| 🐧 Linux | — | ⏳ Not yet released | Build verified on Ubuntu 24.04 (Qt 6.4.2). No signed `.deb` / `.rpm` / AppImage published yet — packaging is the next step. |
+> [!WARNING]
+> **Every binary is unsigned.** No code-signing certificate or Apple identity is in place yet.
+> - **Windows:** SmartScreen may show "Windows protected your PC" (click **More info**, then **Run anyway**). On Windows 11, Smart App Control can block unsigned apps outright; if it does, QuadClicker cannot run until you turn that feature off. Antivirus tools sometimes flag auto-clickers because they use the same `SendInput` call as malware.
+> - **macOS:** Gatekeeper blocks unsigned, un-notarized apps (see [macOS](#install-macos)).
+> - **Linux:** no signing prompt, but check the checksum.
+
+> [!NOTE]
+> **State today.** The only published release is **v0.1.1** (Windows `QuadClicker.exe`). The Linux and macOS files, the zip, and the checksums below arrive with the next release (**v0.2.0**), which the release workflow stages as a *draft* for the maintainer to review and publish. Instructions that name a v0.2.0 file work once that release is published.
+
+### 🧭 At a glance
+
+| Platform | Pick | Status |
+|:---|:---|:---:|
+| 🪟 Windows x64 | Scoop · portable zip · bare `QuadClicker.exe` | Scoop and exe: ✅ v0.1.1 · zip: next release |
+| 🐧 Debian / Ubuntu 24.04+ | `.deb` | next release |
+| 🐧 Fedora | `.rpm` | next release |
+| 🐧 any distro | AppImage | next release |
+| 🐧 Arch | AUR `quadclicker-bin` | after maintainer pushes it |
+| 🍎 macOS (Apple Silicon) | unsigned `.zip` | ⚠️ next release, never run on a physical Mac |
+
+<a id="install-windows"></a>
+
+### 🪟 Windows
+
+**Scoop** (this repo is its own bucket, no extra repo needed):
+
+```powershell
+scoop bucket add quadclicker https://github.com/Quadstronaut/QuadClicker
+scoop install quadclicker/quadclicker
+```
+
+**Portable:** download `QuadClicker-<version>-win-x64.zip` (or the bare `QuadClicker.exe`), extract, run. Self-contained, no .NET install needed. Settings live in `%APPDATA%\QuadClicker\`.
+
+Installs through Scoop turn the in-app updater off (Scoop updates it: `scoop update quadclicker`). Direct downloads keep the in-app updater.
+
+<a id="install-linux"></a>
+
+### 🐧 Linux
+
+Packages are built on **Ubuntu 24.04** (Qt 6.4+). Older distros: build from source (see [Building](#building)).
+
+<details open>
+<summary><b>.deb (Debian, Ubuntu)</b></summary>
+
+```bash
+sudo apt install ./quadclicker_0.2.0_amd64.deb
+```
+
+</details>
+
+<details>
+<summary><b>.rpm (Fedora)</b></summary>
+
+```bash
+sudo dnf install ./quadclicker-0.2.0-1.x86_64.rpm
+```
+
+</details>
+
+<details>
+<summary><b>AppImage (any distro)</b></summary>
+
+```bash
+chmod +x QuadClicker-0.2.0-x86_64.AppImage
+./QuadClicker-0.2.0-x86_64.AppImage
+```
+
+Needs no root, but cannot install the Wayland `uinput` setup below; run that part once by hand.
+
+</details>
+
+<details>
+<summary><b>Arch (AUR)</b></summary>
+
+```bash
+yay -S quadclicker-bin
+```
+
+The recipe is [`packaging/aur/PKGBUILD`](packaging/aur/PKGBUILD).
+
+</details>
+
+<details>
+<summary><b>apt / dnf repository (signed)</b></summary>
+
+Only once the maintainer has created the signing key and published the repository trees (see [`docs/PACKAGING.md`](docs/PACKAGING.md)). Then:
+
+```bash
+# Debian / Ubuntu
+sudo curl -fsSL https://quadstronaut.github.io/QuadClicker/apt/quadclicker-archive-keyring.gpg \
+  -o /etc/apt/keyrings/quadclicker.gpg
+echo "deb [signed-by=/etc/apt/keyrings/quadclicker.gpg] https://quadstronaut.github.io/QuadClicker/apt stable main" \
+  | sudo tee /etc/apt/sources.list.d/quadclicker.list
+sudo apt update && sudo apt install quadclicker
+
+# Fedora
+sudo curl -fsSL https://quadstronaut.github.io/QuadClicker/rpm/quadclicker.repo \
+  -o /etc/yum.repos.d/quadclicker.repo
+sudo dnf install quadclicker
+```
+
+</details>
+
+> [!IMPORTANT]
+> **Wayland needs `/dev/uinput`.** The `.deb`, `.rpm` and AUR packages load the `uinput` module at boot and install a udev rule (`uaccess`: the logged-in user only, no `input` group). After the **first install, reboot** (or run `sudo modprobe uinput && sudo udevadm trigger`). For an AppImage, do the same by hand:
+>
+> ```bash
+> echo uinput | sudo tee /etc/modules-load.d/quadclicker.conf
+> echo 'KERNEL=="uinput", SUBSYSTEM=="misc", TAG+="uaccess", OPTIONS+="static_node=uinput"' \
+>   | sudo tee /etc/udev/rules.d/70-quadclicker-uinput.rules
+> sudo modprobe uinput && sudo udevadm control --reload && sudo udevadm trigger
+> ```
+>
+> **Global hotkeys do not work on Wayland** (X11 only). Wayland clicking is limited to what `uinput` allows.
+
+<a id="install-macos"></a>
+
+### 🍎 macOS
 
 > [!CAUTION]
-> The Windows binary is currently **unsigned** — Windows SmartScreen will warn on first launch until an Authenticode certificate is in place (see `CODE_SIGNING.md`).
+> The macOS build is **unsigned, not notarized, and has never been run on a physical Mac** (CI only). Treat it as a preview.
 
-### 📬 Distribution Channels (in flight)
+1. Download `QuadClicker-<version>-macos-arm64.zip`, unzip, drag `QuadClicker.app` to `/Applications`.
+2. First launch is blocked by Gatekeeper. Either right-click the app, **Open**, **Open** again, or run: `xattr -dr com.apple.quarantine /Applications/QuadClicker.app`
+3. Grant **Accessibility** (and Input Monitoring if asked) in System Settings, Privacy and Security.
 
-QuadClicker is being prepared for distribution through every major package manager. Manifests for these are already in the repo and pinned at v0.1.1:
+Homebrew and Intel Macs are not covered yet.
 
-| Channel | Manifest | Install command (once published) |
-|:---|:---|:---|
-| Chocolatey (Windows) | `Chocolatey/quadclicker.nuspec` | `choco install quadclicker` |
-| Scoop (Windows) | `Scoop/quadclicker.json` | `scoop install quadclicker` |
-| winget (Windows) | _planned_ | `winget install Quadstronaut.QuadClicker` |
-| Homebrew Cask (macOS) | _planned_ | `brew install --cask quadclicker` |
-| Snap, Flatpak, AppImage, `.deb` (Linux) | _planned_ | various |
+### 🔐 Verify a download
+
+```bash
+sha256sum -c --ignore-missing SHA256SUMS.txt        # Linux
+shasum -a 256 -c --ignore-missing SHA256SUMS.txt    # macOS
+```
+
+```powershell
+(Get-FileHash .\QuadClicker.exe -Algorithm SHA256).Hash.ToLower()   # Windows: compare with SHA256SUMS.txt
+```
+
+### 🚢 How a release is made
+
+```mermaid
+flowchart LR
+    V["VERSION<br/>(one source)"] --> T["git tag vX.Y.Z"]
+    T --> CHK["check-version.sh<br/>tag = VERSION"]
+    CHK --> WIN["Windows<br/>exe + zip"]
+    CHK --> LIN["Linux<br/>.deb + .tar.gz + AppImage"]
+    CHK --> RPM["Fedora<br/>.rpm"]
+    CHK --> MAC["macOS<br/>unsigned zip"]
+    WIN & LIN & RPM & MAC --> SUMS["SHA256SUMS.txt"]
+    SUMS --> DRAFT["DRAFT release<br/>(maintainer publishes)"]
+    DRAFT --> MAN["update-manifests.sh<br/>Scoop + AUR"]
+```
+
+Maintainer steps and what is deliberately out of scope: [`docs/PACKAGING.md`](docs/PACKAGING.md) and [`RELEASE_BAR.md`](RELEASE_BAR.md).
+
+> [!TIP]
+> Not yet offered: winget, Chocolatey, Homebrew, Microsoft Store, Flatpak, Snap. They need code signing or a larger public footprint first; see QCLK-9.
 
 ---
 

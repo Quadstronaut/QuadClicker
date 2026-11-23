@@ -1,0 +1,3 @@
+# QuadClicker (Wayland clicks via /dev/uinput): give the logged-in seat user access.
+# uaccess grants the active session only; no `input` group needed.
+KERNEL=="uinput", SUBSYSTEM=="misc", TAG+="uaccess", OPTIONS+="static_node=uinput"

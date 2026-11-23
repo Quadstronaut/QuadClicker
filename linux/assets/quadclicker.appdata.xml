@@ -39,9 +39,9 @@
   </provides>
 
   <releases>
-    <release version="1.0.0" date="2025-01-01">
+    <release version="0.2.0" date="2026-11-23">
       <description>
-        <p>Initial Linux release.</p>
+        <p>First packaged Linux release.</p>
       </description>
     </release>
   </releases>

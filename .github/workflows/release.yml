@@ -1,13 +1,26 @@
 name: Release
 
+# Tag-driven. Push `vX.Y.Z` (must equal ./VERSION) to build every artifact and attach them,
+# with SHA256SUMS.txt, to a DRAFT GitHub release. Nothing is published automatically:
+# a human reviews the draft and clicks Publish. Repo visibility is never touched.
 on:
   push:
-    branches: [master]
     tags:
-      - 'v*'
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: read
 
 jobs:
-  build-windows:
+  verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Tag must equal VERSION and every version file must agree
+        run: scripts/check-version.sh "${GITHUB_REF_NAME}"
+
+  windows:
+    needs: verify
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
@@ -15,52 +28,199 @@ jobs:
         with:
           dotnet-version: '10.0.x'
           dotnet-quality: 'preview'
-      - name: Build & Publish (self-contained single-file)
-        run: dotnet publish windows/QuadClicker.csproj -c Release -r win-x64
-             --self-contained true
-             -p:PublishSingleFile=true
-             -p:IncludeNativeLibrariesForSelfExtract=true
-             -p:EnableCompressionInSingleFile=true
-             -o artifacts/windows
+      - name: Test
+        run: dotnet test windows/Tests/QuadClicker.Tests.csproj -c Release
+      - name: Publish (self-contained single-file, unsigned)
+        run: >
+          dotnet publish windows/QuadClicker.csproj -c Release -r win-x64
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:EnableCompressionInSingleFile=true
+          -o artifacts/windows
+      - name: Collect assets
+        shell: pwsh
+        run: |
+          $ver = (Get-Content VERSION -Raw).Trim()
+          New-Item -ItemType Directory -Force dist | Out-Null
+          # Bare exe: the in-app updater and the Scoop manifest download this exact name.
+          Copy-Item artifacts/windows/QuadClicker.exe dist/QuadClicker.exe
+          # Portable zip: exe + licence.
+          New-Item -ItemType Directory -Force stage | Out-Null
+          Copy-Item artifacts/windows/QuadClicker.exe, LICENSE stage/
+          Compress-Archive -Path stage/* -DestinationPath "dist/QuadClicker-$ver-win-x64.zip"
       - uses: actions/upload-artifact@v7
         with:
-          name: QuadClicker-win-x64
-          path: artifacts/windows/
+          name: dist-windows
+          path: dist/*
+          if-no-files-found: error
 
-  release:
-    needs: [build-windows]
-    runs-on: ubuntu-latest
+  linux:
+    needs: verify
+    # 24.04 is the verified toolchain (Qt 6.4). Packages need that glibc and these library names.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq \
+            build-essential cmake ninja-build pkg-config dpkg-dev fakeroot curl file \
+            qt6-base-dev qt6-base-dev-tools qt6-tools-dev libqt6svg6-dev \
+            libxtst-dev libxss-dev libxcb-cursor0
+      - name: Build binary, tarball and .deb
+        run: packaging/linux/build.sh dist "$RUNNER_TEMP/work"
+      - name: Smoke-test the .deb (install, run, remove)
+        run: |
+          sudo apt-get install -y ./dist/quadclicker_*_amd64.deb
+          test -f /usr/lib/udev/rules.d/70-quadclicker-uinput.rules
+          QT_QPA_PLATFORM=offscreen quadclicker --version
+          sudo apt-get remove -y quadclicker
+      - name: Build AppImage
+        run: packaging/linux/build-appimage.sh "$RUNNER_TEMP/work/stage" dist
+      - name: Smoke-test the AppImage
+        run: |
+          chmod +x dist/QuadClicker-*-x86_64.AppImage
+          APPIMAGE_EXTRACT_AND_RUN=1 QT_QPA_PLATFORM=offscreen ./dist/QuadClicker-*-x86_64.AppImage --version
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist-linux
+          path: dist/*
+          if-no-files-found: error
+
+  rpm:
+    needs: verify
+    runs-on: ubuntu-24.04
+    container: fedora:latest
+    steps:
+      - name: Install build dependencies
+        run: dnf install -y rpm-build cmake ninja-build gcc-c++ qt6-qtbase-devel libXtst-devel libXScrnSaver-devel git tar gzip
+      - uses: actions/checkout@v7
+      - name: Build .rpm from source
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          VER=$(tr -d '[:space:]' < VERSION)
+          TOP="$PWD/rpmbuild"
+          mkdir -p "$TOP/SOURCES"
+          git archive --format=tar.gz --prefix="quadclicker-$VER/" -o "$TOP/SOURCES/quadclicker-$VER.tar.gz" HEAD
+          rpmbuild -bb packaging/linux/quadclicker.spec \
+            --define "_topdir $TOP" --define "qc_version $VER"
+          mkdir -p dist
+          cp "$TOP"/RPMS/x86_64/quadclicker-"$VER"-1.x86_64.rpm dist/
+      - name: Smoke-test the .rpm (install, run)
+        run: |
+          dnf install -y ./dist/quadclicker-*.rpm
+          rpm -ql quadclicker
+          QT_QPA_PLATFORM=offscreen quadclicker --version
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist-rpm
+          path: dist/*
+          if-no-files-found: error
+
+  macos:
+    # Unsigned and never run on a physical Mac (README, Phase 2). Attached for the operator to try, nothing more.
+    needs: verify
+    runs-on: macos-26
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build (no signing identity)
+        run: |
+          xcodebuild -project macos/QuadClicker.xcodeproj -target QuadClicker -configuration Release \
+            SYMROOT="$PWD/build/macos" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
+      - name: Zip the app
+        run: |
+          VER=$(tr -d '[:space:]' < VERSION)
+          mkdir -p dist
+          ditto -c -k --keepParent build/macos/Release/QuadClicker.app "dist/QuadClicker-$VER-macos-arm64.zip"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist-macos
+          path: dist/*
+          if-no-files-found: error
+
+  repos:
+    # Signed apt/dnf repository trees. Skipped (with a notice) until the operator adds the signing secrets.
+    needs: [linux, rpm]
+    runs-on: ubuntu-24.04
+    env:
+      GPG_PRIVATE_KEY: ${{ secrets.QUADCLICKER_GPG_PRIVATE_KEY }}
+      GPG_KEY_ID: ${{ secrets.QUADCLICKER_GPG_KEY_ID }}
+    steps:
+      - name: Check for signing key
+        id: key
+        run: |
+          if [ -z "$GPG_PRIVATE_KEY" ] || [ -z "$GPG_KEY_ID" ]; then
+            echo "::notice::QUADCLICKER_GPG_PRIVATE_KEY / QUADCLICKER_GPG_KEY_ID not set: apt/dnf repo trees skipped (see docs/PACKAGING.md)"
+            echo "have=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "have=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v7
+        if: steps.key.outputs.have == 'true'
+      - uses: actions/download-artifact@v8
+        if: steps.key.outputs.have == 'true'
+        with:
+          pattern: dist-*
+          path: in
+          merge-multiple: true
+      - name: Build and sign repositories
+        if: steps.key.outputs.have == 'true'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq apt-utils createrepo-c gnupg
+          printf '%s' "$GPG_PRIVATE_KEY" | gpg --batch --import
+          mkdir -p debs rpms
+          cp in/*.deb debs/
+          cp in/*.rpm rpms/
+          packaging/repo/build-apt-repo.sh debs repo/apt
+          packaging/repo/build-rpm-repo.sh rpms repo/rpm
+          VER=$(tr -d '[:space:]' < VERSION)
+          mkdir -p dist
+          tar -C repo -czf "dist/quadclicker-repos-$VER.tar.gz" apt rpm
+      - uses: actions/upload-artifact@v7
+        if: steps.key.outputs.have == 'true'
+        with:
+          name: dist-repos
+          path: dist/*
+          if-no-files-found: error
+
+  draft-release:
+    needs: [windows, linux, rpm, macos, repos]
+    # Run when the required builds passed; macOS and repos are allowed to be skipped or fail.
+    if: ${{ !cancelled() && needs.windows.result == 'success' && needs.linux.result == 'success' && needs.rpm.result == 'success' }}
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
-          fetch-depth: 0
-
-      - name: Generate version tag
-        id: version
+          pattern: dist-*
+          path: dist
+          merge-multiple: true
+      - name: Checksums
+        working-directory: dist
         run: |
-          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
-            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
-            echo "is_manual_tag=true" >> "$GITHUB_OUTPUT"
+          # "<hash>  <name>": the format the in-app updater and scripts/update-manifests.sh parse.
+          sha256sum * | grep -v ' SHA256SUMS.txt$' > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+      - name: Create DRAFT release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            # A re-run may refresh a DRAFT. It must never replace assets of a published release.
+            draft=$(gh release view "$GITHUB_REF_NAME" --json isDraft --jq .isDraft)
+            if [ "$draft" != "true" ]; then
+              echo "::error::Release $GITHUB_REF_NAME is already published; refusing to overwrite its assets"
+              exit 1
+            fi
+            gh release upload "$GITHUB_REF_NAME" dist/* --clobber
           else
-            TAG="v0.0.0-dev.$(date +%Y%m%d).${GITHUB_SHA::7}"
-            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-            echo "is_manual_tag=false" >> "$GITHUB_OUTPUT"
+            gh release create "$GITHUB_REF_NAME" dist/* \
+              --draft --verify-tag --generate-notes --title "QuadClicker $GITHUB_REF_NAME" \
+              --notes-file .github/release-notes.md
           fi
-
-      - name: Download Windows artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: QuadClicker-win-x64
-          path: release/windows
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v3
-        with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          files: |
-            release/windows/QuadClicker.exe
-          generate_release_notes: true
-          prerelease: ${{ steps.version.outputs.is_manual_tag == 'false' }}
-          make_latest: ${{ steps.version.outputs.is_manual_tag == 'true' }}

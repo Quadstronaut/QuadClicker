@@ -195,7 +195,7 @@ int CliEntryPoint::run(int argc, char* argv[])
         std::string arg(argv[i]);
         if (arg == "--help" || arg == "-h") { printHelp(); return 0; }
         if (arg == "--version" || arg == "-v") {
-            std::cout << "QuadClicker 1.0.0\n";
+            std::cout << "QuadClicker " QUADCLICKER_VERSION "\n";
             return 0;
         }
     }

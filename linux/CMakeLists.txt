@@ -1,7 +1,10 @@
 cmake_minimum_required(VERSION 3.20)
 
+# Single source of truth for the version: ../VERSION (QCLK-9).
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/../VERSION" QUADCLICKER_VERSION LIMIT_COUNT 1)
+
 project(QuadClicker
-    VERSION 1.0.0
+    VERSION ${QUADCLICKER_VERSION}
     DESCRIPTION "Open-source native auto-clicker"
     HOMEPAGE_URL "https://github.com/quadstronaut/quadclicker"
     LANGUAGES CXX
@@ -114,6 +117,8 @@ target_link_libraries(quadclicker_core
         ${X11_Xscreensaver_LIB}
 )
 
+target_compile_definitions(quadclicker_core PUBLIC QUADCLICKER_VERSION="${PROJECT_VERSION}")
+
 # uinput is a kernel interface — no separate library needed, but we need the kernel headers.
 # QT_DBUS_LIB is automatically defined by Qt when Qt6::DBus is linked, which enables the
 # Wayland idle detection path in IdleDetector.cpp.
@@ -158,6 +163,24 @@ install(FILES assets/quadclicker.appdata.xml
     DESTINATION ${CMAKE_INSTALL_DATADIR}/metainfo
 )
 
+install(FILES assets/quadclicker.svg
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps
+)
+
+# Wayland clicks go through /dev/uinput: load the module at boot and let the logged-in
+# seat user write to it (uaccess, not the broad `input` group). Packages install these
+# under /usr/lib; turn off for non-package installs with -DQUADCLICKER_INSTALL_SYSTEM_FILES=OFF.
+option(QUADCLICKER_INSTALL_SYSTEM_FILES "Install udev rule and modules-load.d entry" ON)
+if(QUADCLICKER_INSTALL_SYSTEM_FILES)
+    install(FILES ../packaging/linux/70-quadclicker-uinput.rules
+        DESTINATION lib/udev/rules.d
+    )
+    install(FILES ../packaging/linux/quadclicker-modules.conf
+        DESTINATION lib/modules-load.d
+        RENAME quadclicker.conf
+    )
+endif()
+
 # ── AppImage (optional) ───────────────────────────────────────────────────────
 # To build an AppImage:
 #   1. Install linuxdeploy: https://github.com/linuxdeploy/linuxdeploy
@@ -179,5 +202,8 @@ if(LINUXDEPLOY)
 endif()
 
 # ── Tests ─────────────────────────────────────────────────────────────────────
-enable_testing()
-add_subdirectory(tests)
+option(QUADCLICKER_BUILD_TESTS "Build the Qt Test suite" ON)
+if(QUADCLICKER_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()

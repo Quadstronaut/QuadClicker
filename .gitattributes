@@ -1,0 +1,7 @@
+# Packaging inputs run on Linux/macOS runners: never CRLF.
+*.sh        text eol=lf
+*.spec      text eol=lf
+PKGBUILD    text eol=lf
+VERSION     text eol=lf
+*.rules     text eol=lf
+*.conf      text eol=lf

@@ -83,7 +83,7 @@ int main(int argc, char* argv[])
     // ── GUI mode ───────────────────────────────────────────────────────────────
     QApplication app(argc, argv);
     app.setApplicationName(QStringLiteral("QuadClicker"));
-    app.setApplicationVersion(QStringLiteral("1.0.0"));
+    app.setApplicationVersion(QStringLiteral(QUADCLICKER_VERSION));
     app.setOrganizationName(QStringLiteral("quadstronaut"));
     app.setOrganizationDomain(QStringLiteral("com.quadstronaut.quadclicker"));
 

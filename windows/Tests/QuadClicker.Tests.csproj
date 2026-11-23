@@ -35,6 +35,7 @@
     <Compile Include="..\Models\ClickRateMode.cs" />
     <Compile Include="..\Core\UpdateChecker.cs" />
     <Compile Include="..\Core\Updater.cs" />
+    <Compile Include="..\Core\PackageManagerInstall.cs" />
   </ItemGroup>
 
 </Project>
