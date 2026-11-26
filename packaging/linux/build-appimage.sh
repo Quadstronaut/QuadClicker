@@ -36,6 +36,9 @@ rm -f "$appdir/usr/lib/udev/rules.d/70-quadclicker-uinput.rules" "$appdir/usr/li
 export APPIMAGE_EXTRACT_AND_RUN=1      # no FUSE on CI runners
 export PATH="$tools:$PATH"
 export QMAKE=${QMAKE:-$(command -v qmake6)}
+# appimage plugin runs appstreamcli on the metainfo and fails the build on ANY warning (v0.2.1 run 45783788760).
+# Metainfo is still validated for Linux packages elsewhere; do not let a warning block the AppImage.
+export LDAI_NO_APPSTREAM=1
 export LDAI_OUTPUT="$out/QuadClicker-$ver-x86_64.AppImage"
 export LINUXDEPLOY_OUTPUT_VERSION="$ver"
 
