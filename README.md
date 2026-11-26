@@ -349,7 +349,7 @@ Builds come from [GitHub Releases](https://github.com/Quadstronaut/QuadClicker/r
 > - **Linux:** no signing prompt, but check the checksum.
 
 > [!NOTE]
-> **State today.** The only published release is **v0.1.1** (Windows `QuadClicker.exe`). The Linux and macOS files, the zip, and the checksums below arrive with the next release (**v0.2.1**), which the release workflow stages as a *draft* for the maintainer to review and publish. Instructions that name a v0.2.1 file work once that release is published.
+> **State today.** The only published release is **v0.1.1** (Windows `QuadClicker.exe`). The Linux and macOS files, the zip, and the checksums below arrive with the next release (**v0.2.2**), which the release workflow stages as a *draft* for the maintainer to review and publish. Instructions that name a v0.2.2 file work once that release is published.
 
 ### 🧭 At a glance
 
@@ -387,7 +387,7 @@ Packages are built on **Ubuntu 24.04** (Qt 6.4+). Older distros: build from sour
 <summary><b>.deb (Debian, Ubuntu)</b></summary>
 
 ```bash
-sudo apt install ./quadclicker_0.2.1_amd64.deb
+sudo apt install ./quadclicker_0.2.2_amd64.deb
 ```
 
 </details>
@@ -396,7 +396,7 @@ sudo apt install ./quadclicker_0.2.1_amd64.deb
 <summary><b>.rpm (Fedora)</b></summary>
 
 ```bash
-sudo dnf install ./quadclicker-0.2.1-1.x86_64.rpm
+sudo dnf install ./quadclicker-0.2.2-1.x86_64.rpm
 ```
 
 </details>
@@ -405,8 +405,8 @@ sudo dnf install ./quadclicker-0.2.1-1.x86_64.rpm
 <summary><b>AppImage (any distro)</b></summary>
 
 ```bash
-chmod +x QuadClicker-0.2.1-x86_64.AppImage
-./QuadClicker-0.2.1-x86_64.AppImage
+chmod +x QuadClicker-0.2.2-x86_64.AppImage
+./QuadClicker-0.2.2-x86_64.AppImage
 ```
 
 Needs no root, but cannot install the Wayland `uinput` setup below; run that part once by hand.

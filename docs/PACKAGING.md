@@ -21,7 +21,7 @@ Operator on 2026-11-23: "Start wave 1". Wave 1 = everything that needs no code-s
 
 Also decided here:
 
-- **Version source:** `VERSION` (0.2.1, the Windows project's number). csproj and CMake read it directly; `scripts/set-version.sh X.Y.Z` syncs Xcode and AppStream; `scripts/check-version.sh` (run first in the workflow) fails on drift or tag mismatch.
+- **Version source:** `VERSION` (0.2.2, the Windows project's number). csproj and CMake read it directly; `scripts/set-version.sh X.Y.Z` syncs Xcode and AppStream; `scripts/check-version.sh` (run first in the workflow) fails on drift or tag mismatch.
 - **Pre-release per push to master: dropped.** The workflow triggers on `vX.Y.Z` tags only.
 - **Windows installer:** none (would need signing to be useful). Portable zip and bare exe. The bare `QuadClicker.exe` stays because the in-app updater and Scoop fetch that exact name.
 - **Linux builds on Ubuntu 24.04** (the verified toolchain). The `.deb` depends on 24.04 library names; the `.rpm` builds natively in a Fedora container.
@@ -75,7 +75,7 @@ AUR: copy `packaging/aur/PKGBUILD` to the AUR git repo and run `makepkg --prints
 
    ```bash
    git worktree add ../qclk-pages gh-pages   # create the branch once with: git checkout --orphan gh-pages
-   tar -xzf quadclicker-repos-0.2.1.tar.gz -C ../qclk-pages
+   tar -xzf quadclicker-repos-0.2.2.tar.gz -C ../qclk-pages
    ```
 
    Then repo Settings, Pages, deploy from `gh-pages`. Each release's tree contains only that release's packages; to keep older versions, merge into the existing `pool/` and `x86_64/` before running the builders locally (`packaging/repo/build-*-repo.sh <dir-with-all-packages> <out>`).
